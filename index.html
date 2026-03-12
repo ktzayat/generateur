@@ -491,11 +491,58 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   </div>
 </div>
 
-<script>
+<!-- Firebase SDK -->
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getDatabase,ref,set,get,update,onValue,remove}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ══ CONFIG FIREBASE ══
+// Projet public dédié BASTION — lecture/écriture ouverte sur /sessions/*
+const FB = initializeApp({
+  apiKey: "AIzaSyBR-82TgpJuRfqqDnN9SObcFYYPGSpw0PM",
+  databaseURL: "https://mosseba-6f5b4-default-rtdb.europe-west1.firebasedatabase.app"
+});
+
+const DB = getDatabase(FB);
+
 // ══════ ÉTAT ══════
 let SES='',ME='',MID='',REQ=3,MIDX=-1,mode='c',gcode='';
 let cgen=0,misOn=false,g1done=false,g2done=false,g3done=false;
 let gSec=25*60,gIv=null;
+let _state=null; // cache local de l'état Firebase
+
+// Référence Firebase pour la session courante
+function sesRef(path=''){return ref(DB,'sessions/'+SES+(path?'/'+path:''));}
+
+// ══ LECTURE / ÉCRITURE ══
+async function gst(){
+  try{const snap=await get(sesRef());return snap.exists()?snap.val():null;}
+  catch{return _state;}
+}
+async function sst(s){
+  _state=s;
+  try{await set(sesRef(),s);}catch(e){console.warn('Firebase write err',e);}
+}
+async function upd(path,val){
+  _state=null;
+  const o={};o['sessions/'+SES+'/'+path]=val;
+  try{await update(ref(DB),o);}catch(e){console.warn('Firebase upd err',e);}
+}
+
+// Écoute temps réel
+let _unsub=null;
+function watchState(cb){
+  if(_unsub)_unsub();
+  _unsub=onValue(sesRef(),(snap)=>{
+    _state=snap.exists()?snap.val():null;
+    cb(_state);
+  });
+}
+
+function live(s){
+  if(!s?.agents)return[];
+  return Object.values(s.agents).filter(a=>Date.now()-a.ping<10000);
+}
 
 // ══════ BOOT ══════
 [{t:'s',m:'bastion v2.3 · initialisé'},{t:'ok',m:'protocole de chiffrement · actif'},
@@ -510,11 +557,11 @@ let gSec=25*60,gIv=null;
 // ══════ CODE ══════
 const C='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function genCode(){let s='';for(let i=0;i<6;i++)s+=C[Math.floor(Math.random()*C.length)];return s;}
-function regenCode(){gcode=genCode();document.getElementById('gc').textContent=gcode;}
-regenCode();
+window.regenCode=function(){gcode=genCode();document.getElementById('gc').textContent=gcode;}
+window.regenCode();
 
 // ══════ MODE ══════
-function setMode(m){
+window.setMode=function(m){
   mode=m;
   document.getElementById('mc').classList.toggle('on',m==='c');
   document.getElementById('mj').classList.toggle('on',m==='j');
@@ -522,53 +569,96 @@ function setMode(m){
   document.getElementById('jb').style.display=m==='j'?'block':'none';
 }
 let rc=3;
-function adjCnt(d){rc=Math.max(2,Math.min(6,rc+d));document.getElementById('cv').textContent=rc;}
+window.adjCnt=function(d){rc=Math.max(2,Math.min(6,rc+d));document.getElementById('cv').textContent=rc;}
 function msg(t,col='var(--err)'){const e=document.getElementById('cmsg');e.textContent=t;e.style.color=col;}
 
 // ══════ CONNEXION ══════
-function doCreate(){
+window.doCreate=async function(){
   const n=document.getElementById('nc').value.trim().toUpperCase();
   if(n.length<2){msg('> IDENTIFIANT TROP COURT');return;}
-  SES=gcode;REQ=rc;ME=n;connect();
+  SES=gcode;REQ=rc;ME=n;
+  await connect(true);
 }
-function doJoin(){
+window.doJoin=async function(){
   const code=document.getElementById('sj').value.trim().toUpperCase();
   const n=document.getElementById('nj').value.trim().toUpperCase();
   if(code.length<2){msg('> CODE SESSION INVALIDE');return;}
   if(n.length<2){msg('> IDENTIFIANT TROP COURT');return;}
   SES=code;ME=n;
-  const s=gst();if(!s){msg('> SESSION INTROUVABLE · VÉRIFIEZ LE CODE');return;}
-  REQ=s.required;connect();
+  msg('> CONNEXION EN COURS...','rgba(0,229,255,0.5)');
+  const s=await gst();
+  if(!s){msg('> SESSION INTROUVABLE · VÉRIFIEZ LE CODE');return;}
+  REQ=s.required;
+  await connect(false);
 }
-function connect(){
-  let s=gst();
-  if(!s)s={agents:{},required:REQ,gen1:false,gen2:false,gen3:false,startTime:null};
-  else REQ=s.required;
-  if(Object.values(s.agents||{}).some(a=>a.name===ME)){msg('> CALLSIGN DÉJÀ UTILISÉ');return;}
+async function connect(isCreator){
+  const s=await gst();
+  let state=s||{agents:{},required:REQ,gen1:false,gen2:false,gen3:false,startTime:null};
+  if(!isCreator)REQ=state.required;
+  if(Object.values(state.agents||{}).some(a=>a.name===ME)){msg('> CALLSIGN DÉJÀ UTILISÉ');return;}
   MID='id_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
-  s.agents[MID]={name:ME,id:MID,ping:Date.now()};
-  sst(s);
+  state.agents[MID]={name:ME,id:MID,ping:Date.now()};
+  await sst(state);
+  // Ping régulier
+  setInterval(async()=>{
+    if(!SES||!MID)return;
+    await upd('agents/'+MID+'/ping',Date.now());
+  },2000);
   show('sw');
   document.getElementById('wcode').textContent=SES;
   document.getElementById('wreq').textContent=REQ;
   buildSlots();
-  wPoll=setInterval(doWP,800);
+  startWatching();
 }
 
-// ══════ ÉTAT PARTAGÉ ══════
-function gst(){try{return JSON.parse(localStorage.getItem('bst_'+SES));}catch{return null;}}
-function sst(s){localStorage.setItem('bst_'+SES,JSON.stringify(s));}
-setInterval(()=>{
-  if(!SES||!MID)return;
-  const s=gst();if(!s)return;
-  if(s.agents&&s.agents[MID])s.agents[MID].ping=Date.now();
-  Object.keys(s.agents||{}).forEach(id=>{if(id!==MID&&Date.now()-s.agents[id].ping>8000)delete s.agents[id];});
-  sst(s);
-},1500);
-function live(s){return Object.values(s.agents||{}).filter(a=>Date.now()-a.ping<8000);}
+// ══════ ATTENTE — écoute Firebase ══════
+function startWatching(){
+  watchState(s=>{
+    if(!s)return;
+    const ag=live(s),cnt=ag.length;
+    document.getElementById('wcnt').textContent=`${cnt} / ${REQ}`;
+    ag.forEach((a,i)=>{
+      document.getElementById('asl'+i)?.classList.add('on');
+      const an=document.getElementById('an'+i);if(an)an.textContent=a.name+(a.id===MID?' [VOUS]':'');
+      const af=document.getElementById('af'+i);if(af)af.style.width='100%';
+    });
+    for(let i=ag.length;i<REQ;i++){
+      document.getElementById('asl'+i)?.classList.remove('on');
+      const an=document.getElementById('an'+i);if(an)an.textContent='EN ATTENTE...';
+      const af=document.getElementById('af'+i);if(af)af.style.width='0';
+    }
+    if(cnt>=REQ&&!misOn)startMission(s);
+    // Sync mission en cours
+    if(misOn){
+      if(s.gen1&&cgen===1)cpGen(1,s);
+      if(s.gen2&&cgen===2)cpGen(2,s);
+      if(s.gen3&&cgen===3)cpGen(3,s);
+      // G1 sync holds
+      if(cgen===1&&s.g1h){
+        const ag2=live(s);
+        ag2.forEach(a=>{
+          const el=document.getElementById('sa_'+a.id);if(!el)return;
+          const held=a.id===MID?g1hold:(s.g1h[a.id]&&s.g1h[a.id].h&&Date.now()-s.g1h[a.id].t<1500);
+          el.classList.toggle('h',held);
+        });
+        checkG1sync(s,ag2);
+      }
+      // G2 sync jauges
+      if(cgen===2&&s.g2j){
+        const ag2=live(s);
+        ag2.forEach(a=>{
+          if(a.id===MID)return;
+          const jd=s.g2j[a.id];const act=jd&&Date.now()-jd.t<3000;const val=act?jd.v:0;
+          const jf=document.getElementById('jf_'+a.id);const jp=document.getElementById('jp_'+a.id);
+          if(jf){jf.style.height=val+'%';jf.className='jfill'+(val<30?' d':val<60?' w':'');}
+          if(jp)jp.textContent=Math.round(val)+'%';
+        });
+        checkG2win(s,ag2);
+      }
+    }
+  });
+}
 
-// ══════ ATTENTE ══════
-let wPoll=null;
 function buildSlots(){
   const c=document.getElementById('aslots');c.innerHTML='';
   for(let i=0;i<REQ;i++){
@@ -580,39 +670,25 @@ function buildSlots(){
     c.appendChild(d);
   }
 }
-function doWP(){
-  const s=gst();if(!s)return;
-  const ag=live(s),cnt=ag.length;
-  document.getElementById('wcnt').textContent=`${cnt} / ${REQ}`;
-  ag.forEach((a,i)=>{
-    document.getElementById('asl'+i)?.classList.add('on');
-    const an=document.getElementById('an'+i);if(an)an.textContent=a.name+(a.id===MID?' [VOUS]':'');
-    const af=document.getElementById('af'+i);if(af)af.style.width='100%';
-  });
-  for(let i=ag.length;i<REQ;i++){
-    document.getElementById('asl'+i)?.classList.remove('on');
-    const an=document.getElementById('an'+i);if(an)an.textContent='EN ATTENTE...';
-    const af=document.getElementById('af'+i);if(af)af.style.width='0';
-  }
-  if(cnt>=REQ&&!misOn){clearInterval(wPoll);startMission();}
+
+window.doAbort=async function(){
+  if(MID)await upd('agents/'+MID,null);
+  location.reload();
 }
-function doAbort(){const s=gst();if(s?.agents?.[MID]){delete s.agents[MID];sst(s);}location.reload();}
 
 // ══════ MISSION ══════
-function startMission(){
-  misOn=true;
-  const s=gst();
-  if(s&&!s.startTime){s.startTime=Date.now();sst(s);}
-  const ag=live(s||{agents:{}});
+function startMission(s){
+  if(misOn)return;misOn=true;
+  if(!s.startTime)upd('startTime',Date.now());
+  const ag=live(s);
   MIDX=ag.findIndex(a=>a.id===MID);
   show('sm');
   document.getElementById('mhc').textContent=SES;
-  buildCards();startGT();startG1();startMP();
+  buildCards(s);startGT(s);startG1(s);
   log('s','protocole bastion · démarré');
   log('w','3 générateurs à activer · paleto forest');
 }
-function buildCards(){
-  const s=gst();if(!s)return;
+function buildCards(s){
   const ag=live(s),c=document.getElementById('agcards');c.innerHTML='';
   ag.forEach(a=>{
     const d=document.createElement('div');d.className='agc'+(a.id===MID?' me':'');
@@ -622,11 +698,11 @@ function buildCards(){
     c.appendChild(d);
   });
 }
-function log(type,msg){
+function log(type,m){
   const l=document.getElementById('mlog');
   const d=document.createElement('div');d.className='lge '+type;
   const n=new Date();const ts=`${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}:${n.getSeconds().toString().padStart(2,'0')}`;
-  d.textContent=`[${ts}] ${msg}`;l.appendChild(d);l.scrollTop=l.scrollHeight;
+  d.textContent=`[${ts}] ${m}`;l.appendChild(d);l.scrollTop=l.scrollHeight;
 }
 function show(id){['sc','sw','sm','ssuc'].forEach(s=>document.getElementById(s).classList.toggle('off',s!==id));}
 function setGen(n,st){
@@ -637,11 +713,11 @@ function setGen(n,st){
 }
 
 // ══════ TIMER ══════
-function startGT(){
+function startGT(s){
   const el=document.getElementById('mtimer');
+  const base=s?.startTime||Date.now();
   gIv=setInterval(()=>{
-    const s=gst();if(!s||!s.startTime)return;
-    const rem=Math.max(0,gSec-Math.floor((Date.now()-s.startTime)/1000));
+    const rem=Math.max(0,gSec-Math.floor((Date.now()-base)/1000));
     const m=Math.floor(rem/60),sec=rem%60;
     el.textContent=`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
     el.className='ot'+(rem<120?' d':rem<300?' w':'');
@@ -649,17 +725,8 @@ function startGT(){
   },500);
 }
 
-// ══════ POLL MISSION ══════
-let mp=null;
-function startMP(){
-  mp=setInterval(()=>{
-    const s=gst();if(!s)return;
-    if(s.gen1&&cgen===1)cpGen(1);
-    if(s.gen2&&cgen===2)cpGen(2);
-    if(s.gen3&&cgen===3)cpGen(3);
-  },600);
-}
-function cpGen(n){
+// cpGen : transition entre générateurs (déclenché par watchState)
+function cpGen(n,s){
   if(cgen!==n)return;
   setGen(n,'dn');
   log('sig',`nœud 0${n} actif · signal montant`);
@@ -668,17 +735,17 @@ function cpGen(n){
   if(n===3){document.getElementById('g3').classList.remove('on');g3done=true;
     setTimeout(()=>show('ssuc'),2000);}
   cgen=n+1;
-  if(n<3)setTimeout(()=>{if(n===1)startG2();if(n===2)startG3();},1200);
+  if(n<3)setTimeout(()=>{if(n===1)startG2(s);if(n===2)startG3(s);},1200);
 }
 
 // ══════ GEN 1 ══════
 let ndPct=0,ndDir=1,ndSpd=0.85,nIv=null,g1hold=false,g1hs=0,g1au=0,g1am=6;
-function startG1(){
+function startG1(s){
   cgen=1;setGen(1,'act');document.getElementById('g1').classList.add('on');
   log('w','générateur 01 · en attente de synchronisation');
   const bar=document.getElementById('atts');
   for(let i=0;i<g1am;i++){const d=document.createElement('div');d.className='at';d.id='at'+i;bar.appendChild(d);}
-  const s=gst();const ag=live(s||{agents:{}});
+  const ag=live(s||{agents:{}});
   const c=document.getElementById('sags');c.innerHTML='';
   ag.forEach(a=>{
     const d=document.createElement('div');d.className='sag'+(a.id===MID?' ma':'');
@@ -697,19 +764,13 @@ function animN(){
   const inZ=ndPct>=38&&ndPct<=62;
   nd.style.background=inZ?'var(--ok)':'var(--c)';
   nd.style.boxShadow=inZ?'0 0 12px rgba(57,255,143,0.9)':'0 0 10px rgba(0,229,255,0.9)';
-  const s=gst();if(!s)return;
-  if(!s.g1h)s.g1h={};
-  s.g1h[MID]={h:g1hold,p:ndPct,t:Date.now()};sst(s);
-  const ag=live(s);
-  ag.forEach(a=>{
-    const el=document.getElementById('sa_'+a.id);if(!el)return;
-    const held=a.id===MID?g1hold:(s.g1h&&s.g1h[a.id]&&s.g1h[a.id].h&&Date.now()-s.g1h[a.id].t<1200);
-    el.classList.toggle('h',held);
-  });
-  if(!g1done&&inZ)chkG1(s,ag);
+  // Upload mon état hold
+  upd('g1h/'+MID,{h:g1hold,p:ndPct,t:Date.now()});
 }
-function chkG1(s,ag){
-  const allH=ag.every(a=>a.id===MID?g1hold:(s.g1h&&s.g1h[a.id]&&s.g1h[a.id].h&&Date.now()-s.g1h[a.id].t<1200));
+function checkG1sync(s,ag){
+  if(g1done||cgen!==1)return;
+  const inZ=ndPct>=38&&ndPct<=62;if(!inZ){g1hs=0;return;}
+  const allH=ag.every(a=>a.id===MID?g1hold:(s.g1h&&s.g1h[a.id]&&s.g1h[a.id].h&&Date.now()-s.g1h[a.id].t<1500));
   if(allH){
     if(!g1hs)g1hs=Date.now();
     if(Date.now()-g1hs>700){
@@ -717,7 +778,7 @@ function chkG1(s,ag){
       document.getElementById('g1r').textContent='SYNCHRONISATION RÉUSSIE';
       document.getElementById('g1r').classList.add('ok');
       log('ok','générateur 01 · synchronisé');
-      const st=gst();st.gen1=true;sst(st);
+      upd('gen1',true);
     }
   }else{
     if(g1hs&&Date.now()-g1hs>200){
@@ -727,17 +788,17 @@ function chkG1(s,ag){
     }
   }
 }
-function g1H(on){if(g1done)return;g1hold=on;if(!on)g1hs=0;document.getElementById('g1btn').classList.toggle('on',on);}
+window.g1H=function(on){if(g1done)return;g1hold=on;if(!on)g1hs=0;document.getElementById('g1btn').classList.toggle('on',on);}
 
 // ══════ GEN 2 ══════
 let g2Iv=null,g2hold=false,myJ=100,myRms=1000,lHold=Date.now();
-function startG2(){
+function startG2(s){
   cgen=2;setGen(2,'act');document.getElementById('g2').classList.add('on');
   log('w','générateur 02 · maintien requis');
-  const s=gst();const ag=live(s||{agents:{}});
+  const ag=live(s||{agents:{}});
   const idx=ag.findIndex(a=>a.id===MID);
   const rh=[1600,1100,800,600,1900,1300];
-  myRms=rh[idx%rh.length];
+  myRms=rh[idx%rh.length];myJ=100;
   document.getElementById('rtm').textContent=(myRms/1000).toFixed(1)+'s';
   const jc=document.getElementById('jauges');jc.innerHTML='';
   ag.forEach(a=>{
@@ -750,40 +811,57 @@ function startG2(){
   let lt=Date.now();
   g2Iv=setInterval(()=>{
     const dt=Date.now()-lt;lt=Date.now();
-    const s=gst();if(!s)return;if(!s.g2j)s.g2j={};
     if(g2hold){lHold=Date.now();myJ=Math.min(100,myJ+dt*0.18);}
     else{myJ=Math.max(0,myJ-dt*(myRms/1000)*0.035);}
-    s.g2j[MID]={v:myJ,t:Date.now()};sst(s);
-    const ag=live(s);
-    ag.forEach(a=>{
-      const jd=s.g2j&&s.g2j[a.id];const act=jd&&Date.now()-jd.t<2500;const val=act?jd.v:0;
-      const jf=document.getElementById('jf_'+a.id);const jp=document.getElementById('jp_'+a.id);
-      if(jf){jf.style.height=val+'%';jf.className='jfill'+(val<30?' d':val<60?' w':'');}
-      if(jp)jp.textContent=Math.round(val)+'%';
-    });
-    const allH=ag.every(a=>{const jd=s.g2j&&s.g2j[a.id];return jd&&Date.now()-jd.t<2500&&jd.v>65;});
-    if(!s.gen2){
-      if(allH){if(!s.g2ws)s.g2ws=Date.now();else if(Date.now()-s.g2ws>4000){s.gen2=true;log('ok','générateur 02 · pression stabilisée');document.getElementById('g2r').textContent='PRESSION STABILISÉE';document.getElementById('g2r').classList.add('ok');}}
-      else s.g2ws=null;
-    }
-    sst(s);
+    // Ma propre jauge affichée
+    const jf=document.getElementById('jf_'+MID);const jp=document.getElementById('jp_'+MID);
+    if(jf){jf.style.height=myJ+'%';jf.className='jfill'+(myJ<30?' d':myJ<60?' w':'');}
+    if(jp)jp.textContent=Math.round(myJ)+'%';
+    // Upload mon état
+    upd('g2j/'+MID,{v:myJ,t:Date.now()});
     document.getElementById('rtm').classList.toggle('p',g2hold);
-  },100);
+  },150);
 }
-function g2H(on){g2hold=on;if(on)lHold=Date.now();document.getElementById('g2btn').classList.toggle('on',on);}
+function checkG2win(s,ag){
+  if(g2done||cgen!==2||!s.g2j)return;
+  const allH=ag.every(a=>{
+    if(a.id===MID)return myJ>65;
+    const jd=s.g2j[a.id];return jd&&Date.now()-jd.t<3000&&jd.v>65;
+  });
+  if(allH){
+    if(!s.g2ws){upd('g2ws',Date.now());}
+    else if(Date.now()-s.g2ws>4000&&!s.gen2){
+      g2done=true;log('ok','générateur 02 · pression stabilisée');
+      document.getElementById('g2r').textContent='PRESSION STABILISÉE';
+      document.getElementById('g2r').classList.add('ok');
+      upd('gen2',true);
+    }
+  }else if(s.g2ws){upd('g2ws',null);}
+}
+window.g2H=function(on){g2hold=on;if(on)lHold=Date.now();document.getElementById('g2btn').classList.toggle('on',on);}
 
 // ══════ GEN 3 ══════
-let g3sec=45,g3civ=null,g3piv=null;
+let g3sec=45,g3civ=null;
 const SYMS=['▲','◆','●','■','▼','◀','▶','✦','⬟','⬡','△','□','○','◇','★'];
 function shuf(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function startG3(){
+// Seed reproductible basé sur le code session pour que tous voient les mêmes symboles
+function seededShuf(arr,seed){
+  let s=0;for(let i=0;i<seed.length;i++)s=(s*31+seed.charCodeAt(i))&0xffffffff;
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){s=(s*1664525+1013904223)&0xffffffff;const j=Math.abs(s)%(i+1);[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function startG3(s){
   cgen=3;setGen(3,'act');document.getElementById('g3').classList.add('on');
   log('w','générateur 03 · circuit fragmenté · coopération requise');
-  const s=gst();const ag=live(s||{agents:{}});
-  const idx=ag.findIndex(a=>a.id===MID);
+  const ag=live(s||{agents:{}});
+  // Index trié par ordre d'inscription (stable)
+  const sorted=Object.values(s.agents||{}).sort((a,b)=>a.id.localeCompare(b.id));
+  const idx=sorted.findIndex(a=>a.id===MID);
   document.getElementById('g3s').textContent=String(idx+1).padStart(2,'0');
   document.getElementById('g3a').textContent=ME;
-  const sym=shuf([...SYMS]).slice(0,ag.length*3);
+  // Symboles déterministes (seed = code session)
+  const sym=seededShuf([...SYMS],SES).slice(0,sorted.length*3);
   const mine=sym.slice(idx*3,(idx+1)*3);
   const swc=document.getElementById('swl');swc.innerHTML='';
   ['A','B','C'].forEach((id,i)=>{
@@ -801,40 +879,43 @@ function startG3(){
     `Tous mes switches s'activent simultanément.`,
   ];
   document.getElementById('fbtx').innerHTML=frags[idx%frags.length];
-  const st=gst();if(!st.g3){st.g3={acts:[]};sst(st);}
   g3sec=45;
   g3civ=setInterval(()=>{
     g3sec--;const el=document.getElementById('g3t');
     el.textContent=g3sec;el.className='g3t'+(g3sec<10?' d':g3sec<20?' w':'');
-    if(g3sec<=0){clearInterval(g3civ);g3Fail();}
+    if(g3sec<=0){clearInterval(g3civ);g3Fail(s);}
   },1000);
-  g3piv=setInterval(()=>{const st=gst();if(st?.gen3&&!g3done){g3done=true;g3Win();}},600);
 }
-function actSw(id,idx,sym){
+async function actSw(id,idx,sym){
   if(g3done)return;
   const sw=document.getElementById('sw_'+id);if(!sw||sw.classList.contains('on'))return;
   sw.classList.add('on');document.getElementById('sl_'+id)?.classList.add('on');
   log('ok',`switch ${id} · activé · ${sym}`);
-  const s=gst();if(!s)return;if(!s.g3)s.g3={acts:[]};
-  s.g3.acts.push({ag:MID,nm:ME,sw:id,sym,t:Date.now()});
-  const ag=live(s);if(s.g3.acts.length>=ag.length*3){s.gen3=true;log('ok','circuit complet · générateur 03 · en ligne');}
-  sst(s);
+  const snap=await gst();const s=snap||{};
+  const acts=(s.g3acts||[]);
+  acts.push({ag:MID,nm:ME,sw:id,sym,t:Date.now()});
+  await upd('g3acts',acts);
+  const ag=live(s);
+  if(acts.length>=ag.length*3){
+    log('ok','circuit complet · générateur 03 · en ligne');
+    await upd('gen3',true);
+  }
 }
-function g3Fail(){
+async function g3Fail(s){
   if(g3done)return;
   log('e','temps écoulé · réinitialisation');flashE();
   document.getElementById('g3r').textContent='ÉCHEC · RÉINITIALISATION';
   document.getElementById('g3r').classList.add('fail');
-  const s=gst();if(s){s.g3={acts:[]};sst(s);}
+  await upd('g3acts',[]);
   setTimeout(()=>{
     document.getElementById('g3r').textContent='';document.getElementById('g3r').classList.remove('fail');
     ['A','B','C'].forEach(id=>{document.getElementById('sw_'+id)?.classList.remove('on');document.getElementById('sl_'+id)?.classList.remove('on');});
     g3sec=45;
     g3civ=setInterval(()=>{g3sec--;const el=document.getElementById('g3t');el.textContent=g3sec;
-      el.className='g3t'+(g3sec<10?' d':g3sec<20?' w':'');if(g3sec<=0){clearInterval(g3civ);g3Fail();}},1000);
+      el.className='g3t'+(g3sec<10?' d':g3sec<20?' w':'');if(g3sec<=0){clearInterval(g3civ);g3Fail(s);}},1000);
   },2200);
 }
-function g3Win(){clearInterval(g3civ);clearInterval(g3piv);document.getElementById('g3r').textContent='CIRCUIT COMPLET · NŒUD ACTIF';document.getElementById('g3r').classList.add('ok');}
+function g3Win(){document.getElementById('g3r').textContent='CIRCUIT COMPLET · NŒUD ACTIF';document.getElementById('g3r').classList.add('ok');}
 
 // ══════ UTILITAIRES ══════
 function flashE(){const e=document.getElementById('eov');e.style.display='block';setTimeout(()=>e.style.display='none',700);}
