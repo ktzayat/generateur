@@ -3,794 +3,927 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BASTION · GÉN-01</title>
+<title>BASTION · PROTOCOLE D'URGENCE</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+:root{
+  --c:#00e5ff;--cd:#0097b2;--cb:rgba(0,229,255,0.08);--cg:rgba(0,229,255,0.15);
+  --bg:#020a0d;--bg2:#040f14;--err:#ff3b3b;--ok:#39ff8f;--warn:#f5c400;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{width:100%;height:100%;background:#000;color:#33ff33;font-family:'Share Tech Mono',monospace;overflow:hidden;}
-
-/* CRT effect */
+html,body{width:100%;height:100%;background:var(--bg);font-family:'Share Tech Mono',monospace;color:var(--c);overflow:hidden;}
 body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,0.09) 0px,rgba(0,0,0,0.09) 1px,transparent 1px,transparent 4px);}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
-  background:radial-gradient(ellipse at 50% 40%,transparent 50%,rgba(0,0,0,0.7) 100%);}
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px);}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 20% 50%,rgba(0,229,255,0.03) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 20%,rgba(0,150,200,0.04) 0%,transparent 50%);}
 
-@keyframes blink{50%{opacity:0}}
-@keyframes fade{from{opacity:0}to{opacity:1}}
-@keyframes err{0%,100%{background:#000}50%{background:rgba(255,0,0,0.1)}}
-@keyframes ok{0%,100%{background:#000}50%{background:rgba(0,255,0,0.05)}}
-@keyframes scan{0%{top:-4px}100%{top:100vh}}
-@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
-@keyframes glitch{0%,92%,100%{transform:none}93%{transform:translateX(-5px)}95%{transform:translateX(4px)}}
-@keyframes typerow{from{max-height:0;overflow:hidden}to{max-height:60px}}
+/* Grille hexagonale */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;}
 
-.scanline{position:fixed;left:0;right:0;height:2px;z-index:9997;pointer-events:none;
-  background:rgba(51,255,51,0.04);animation:scan 8s linear infinite;}
+/* Scan line */
+.scan{position:fixed;left:0;right:0;height:2px;z-index:9998;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,0.12),transparent);
+  animation:scanAnim 7s linear infinite;}
+@keyframes scanAnim{0%{top:-2px}100%{top:100vh}}
 
-.scr{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;}
+/* Screens */
+.scr{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
 .scr.off{display:none!important;}
 
-/* ──────────────────────────────
-   CONNEXION
-────────────────────────────── */
-#sc{background:#000;padding:16px;}
-.box{width:100%;max-width:560px;border:1px solid #1a4a1a;background:#050505;}
-.boxbar{background:#0a1a0a;border-bottom:1px solid #1a4a1a;padding:5px 12px;
-  display:flex;justify-content:space-between;align-items:center;}
-.boxbar-t{font-size:9px;letter-spacing:3px;color:#2a7a2a;}
-.boxb{padding:20px 22px 24px;}
-.boot{min-height:80px;margin-bottom:16px;}
-.bl{font-size:10px;line-height:1.9;color:#2a6a2a;opacity:0;animation:fade .05s ease forwards;}
-.bl::before{content:'> ';}
-.bl.e{color:#8a0000;}.bl.w{color:#7a5a00;}.bl.ok{color:#33ff33;}
+/* Panel */
+.pnl{background:rgba(2,15,20,0.96);border:1px solid rgba(0,229,255,0.18);position:relative;overflow:hidden;}
+.pnl::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--c),transparent);opacity:0.35;animation:topline 3s linear infinite;}
+@keyframes topline{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.pnl::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,0.2),transparent);}
 
-.mtog{display:flex;border:1px solid #1a4a1a;margin-bottom:14px;}
-.mtbtn{flex:1;padding:7px;background:transparent;border:none;color:#2a6a2a;
-  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;cursor:pointer;text-align:center;transition:.12s;}
-.mtbtn:first-child{border-right:1px solid #1a4a1a;}
-.mtbtn.on{background:#0a1a0a;color:#33ff33;}
-.mtbtn:hover:not(.on){color:#33aa33;}
+/* Coins */
+.ct{position:absolute;width:14px;height:14px;}
+.ct.tl{top:0;left:0;border-top:2px solid var(--c);border-left:2px solid var(--c);}
+.ct.tr{top:0;right:0;border-top:2px solid var(--c);border-right:2px solid var(--c);}
+.ct.bl{bottom:0;left:0;border-bottom:2px solid var(--c);border-left:2px solid var(--c);}
+.ct.br{bottom:0;right:0;border-bottom:2px solid var(--c);border-right:2px solid var(--c);}
 
-.code-box{border:1px solid #1a4a1a;background:#030e03;padding:14px;margin-bottom:12px;text-align:center;position:relative;}
-.cb-l{font-size:7px;letter-spacing:4px;color:#2a6a2a;margin-bottom:6px;}
-.cb-c{font-family:'VT323',monospace;font-size:52px;color:#33ff33;letter-spacing:18px;
-  text-shadow:0 0 12px rgba(51,255,51,.4);}
-.cb-n{font-size:7px;color:#1a4a1a;margin-top:4px;}
-.cb-re{position:absolute;top:6px;right:8px;background:transparent;border:1px solid #1a4a1a;
-  color:#1a4a1a;font-family:'Share Tech Mono',monospace;font-size:7px;padding:2px 6px;cursor:pointer;transition:.15s;}
-.cb-re:hover{color:#33ff33;border-color:#33ff33;}
+/* Typo */
+.ot{font-family:'Orbitron',sans-serif;}
+.lbl{font-size:8px;letter-spacing:4px;color:rgba(0,229,255,0.3);}
+.tag{font-size:7px;letter-spacing:2px;padding:2px 6px;border:1px solid rgba(0,229,255,0.2);color:rgba(0,229,255,0.5);}
+.tag.ok{border-color:rgba(57,255,143,0.3);color:rgba(57,255,143,0.6);}
+.tag.err{border-color:rgba(255,59,59,0.3);color:rgba(255,59,59,0.5);}
+.tag.w{border-color:rgba(245,196,0,0.3);color:rgba(245,196,0,0.6);}
 
-.cnt-l{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
-.cnt-lbl{font-size:8px;letter-spacing:3px;color:#2a6a2a;flex:1;}
-.cnt-ctrl{display:flex;align-items:center;gap:5px;}
-.cbt{width:22px;height:22px;background:transparent;border:1px solid #1a4a1a;
-  color:#33ff33;cursor:pointer;font-size:13px;transition:.1s;}
-.cbt:hover{background:#0a1a0a;}
-.cval{font-family:'VT323',monospace;font-size:20px;color:#33ff33;width:22px;text-align:center;}
+@keyframes blink{50%{opacity:0.1}}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px rgba(0,229,255,0.3)}50%{box-shadow:0 0 24px rgba(0,229,255,0.7)}}
+@keyframes fu{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes glitch{0%,92%,100%{transform:none}93%{transform:translateX(-3px)}95%{transform:translateX(3px)}97%{transform:translateX(-1px)}}
+@keyframes errfl{0%,100%{background:rgba(255,59,59,0)}50%{background:rgba(255,59,59,0.09)}}
+@keyframes rot{to{transform:rotate(360deg)}}
 
-.fld{margin-bottom:10px;}
-.fld-l{font-size:7px;letter-spacing:4px;color:#2a6a2a;margin-bottom:4px;}
-.fld-r{display:flex;align-items:center;gap:6px;border-bottom:1px solid #1a4a1a;padding:5px 0;}
-.fld-r input{flex:1;background:transparent;border:none;outline:none;
-  color:#33ff33;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:2px;caret-color:#33ff33;}
-.fld-r input::placeholder{color:#1a3a1a;}
-.fld-ps{color:#2a6a2a;font-size:11px;}
+/* ══ ÉCRAN 1 : CONNEXION ══ */
+.logo{font-family:'Orbitron',sans-serif;font-size:30px;font-weight:900;letter-spacing:14px;
+  color:var(--c);text-shadow:0 0 30px rgba(0,229,255,0.6),0 0 60px rgba(0,229,255,0.2);
+  animation:glitch 8s ease-in-out infinite;display:block;text-align:center;margin-bottom:5px;}
+.logo-sub{font-size:9px;letter-spacing:5px;color:rgba(0,229,255,0.28);text-align:center;}
+.logo-auth{font-size:8px;letter-spacing:3px;color:rgba(0,229,255,0.14);text-align:center;margin-top:3px;}
+.logo-wrap{margin-bottom:28px;}
 
-.xbtn{width:100%;padding:10px;background:transparent;border:1px solid #1a6a1a;
-  color:#33ff33;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;cursor:pointer;transition:.15s;}
-.xbtn:hover{background:#0a1a0a;border-color:#33ff33;}
-#cmsg{font-size:9px;color:#cc0000;margin-top:7px;min-height:14px;}
+.cpnl{width:560px;padding:28px 32px;}
 
-/* ──────────────────────────────
-   ATTENTE
-────────────────────────────── */
-#sw{background:#000;}
-.wbox{width:100%;max-width:420px;border:1px solid #1a4a1a;background:#050505;}
-.wbhdr{padding:6px 14px;border-bottom:1px solid #0a2a0a;
-  display:flex;justify-content:space-between;font-size:8px;letter-spacing:3px;color:#2a6a2a;}
-.wbb{padding:18px 20px;}
-.alist{margin:10px 0 12px;display:flex;flex-direction:column;gap:2px;}
-.alr{display:flex;align-items:center;gap:7px;padding:4px 6px;border-left:2px solid transparent;transition:.2s;}
-.alr.on{border-left-color:#33ff33;}
-.alr-n{font-size:8px;color:#1a4a1a;width:16px;}
-.alr-nm{flex:1;font-size:10px;letter-spacing:2px;color:#2a6a2a;}
-.alr.on .alr-nm{color:#33ff33;}
-.alr-d{width:5px;height:5px;border-radius:50%;background:#1a4a1a;}
-.alr.on .alr-d{background:#33ff33;box-shadow:0 0 5px #33ff33;animation:pulse 1.2s infinite;}
-.bigcnt{font-family:'VT323',monospace;font-size:60px;color:#33ff33;text-align:center;
-  text-shadow:0 0 14px rgba(51,255,51,.45);line-height:1.1;}
-.bcnote{font-size:8px;letter-spacing:2px;color:#2a6a2a;text-align:center;margin-bottom:10px;}
-.bcnote b{color:#33aa33;}
-.abnd{width:100%;padding:6px;background:transparent;border:1px solid #3a0000;
-  color:#4a0000;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;transition:.15s;}
-.abnd:hover{color:#cc0000;border-color:#cc0000;}
+.boot{min-height:56px;margin-bottom:18px;}
+.bl{font-size:10px;line-height:2;color:rgba(0,229,255,0.22);opacity:0;animation:fu .1s ease forwards;}
+.bl.ok::before{content:'[✓] ';color:rgba(57,255,143,0.45);}
+.bl.w::before{content:'[!] ';color:rgba(245,196,0,0.45);}
+.bl.s::before{content:'[·] ';color:rgba(0,229,255,0.28);}
 
-/* ──────────────────────────────
-   MISSION — layout
-────────────────────────────── */
-#sm{background:#000;padding:0;align-items:stretch;justify-content:stretch;flex-direction:column;}
+.mode-row{display:flex;gap:8px;margin-bottom:22px;}
+.mbtn{flex:1;padding:10px;background:rgba(0,229,255,0.02);border:1px solid rgba(0,229,255,0.12);
+  color:rgba(0,229,255,0.35);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;
+  cursor:pointer;transition:all .2s;text-align:center;}
+.mbtn.on{background:rgba(0,229,255,0.07);border-color:var(--c);color:var(--c);
+  box-shadow:0 0 14px rgba(0,229,255,0.12),inset 0 0 8px rgba(0,229,255,0.04);}
+.mbtn:hover:not(.on){background:rgba(0,229,255,0.04);border-color:rgba(0,229,255,0.28);}
 
-#mhdr{flex:0 0 32px;border-bottom:1px solid #0d2a0d;
-  display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#030a03;}
-.mhl{display:flex;align-items:center;gap:10px;}
-.mh-live{width:4px;height:4px;border-radius:50%;background:#33ff33;box-shadow:0 0 4px #33ff33;animation:pulse 1.4s infinite;}
-.mh-t{font-size:8px;letter-spacing:4px;color:#2a8a2a;}
-.mh-s{font-size:7px;letter-spacing:2px;color:#1a4a1a;}
-#mtimer{font-family:'VT323',monospace;font-size:22px;color:#33ff33;letter-spacing:2px;}
-#mtimer.w{color:#ccaa00;}
-#mtimer.d{color:#cc0000;animation:blink .3s step-end infinite;}
+.sess-disp{background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.14);
+  padding:18px;margin-bottom:18px;text-align:center;position:relative;}
+.sess-lbl{font-size:8px;letter-spacing:4px;color:rgba(0,229,255,0.28);margin-bottom:8px;}
+.sess-code{font-family:'Orbitron',sans-serif;font-size:40px;font-weight:900;letter-spacing:16px;
+  color:var(--c);text-shadow:0 0 18px rgba(0,229,255,0.5);font-variant-numeric:tabular-nums;}
+.sess-note{font-size:9px;letter-spacing:2px;color:rgba(0,229,255,0.18);margin-top:7px;}
+.sess-re{position:absolute;top:8px;right:8px;background:transparent;border:1px solid rgba(0,229,255,0.13);
+  color:rgba(0,229,255,0.25);font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;
+  padding:3px 7px;cursor:pointer;transition:all .2s;}
+.sess-re:hover{color:var(--c);border-color:rgba(0,229,255,0.5);}
 
-#mbody{flex:1 1 0;display:flex;overflow:hidden;}
+.cnt-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.cnt-lbl{font-size:8px;letter-spacing:3px;color:rgba(0,229,255,0.28);flex:1;}
+.cnt-ctrl{display:flex;align-items:center;gap:8px;}
+.cbtn{width:28px;height:28px;background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.18);
+  color:var(--c);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.cbtn:hover{background:rgba(0,229,255,0.09);}
+.cval{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:var(--c);width:30px;text-align:center;}
+.cnote{font-size:8px;color:rgba(0,229,255,0.18);letter-spacing:1px;}
 
-/* LOG */
-#mlog{flex:0 0 220px;border-right:1px solid #0a2a0a;display:flex;flex-direction:column;background:#030803;}
-.mlog-h{padding:5px 10px;border-bottom:1px solid #0a2a0a;font-size:7px;letter-spacing:3px;color:#1a5a1a;}
-.mlog-b{flex:1;overflow-y:auto;padding:6px 10px;display:flex;flex-direction:column;}
-.mlog-b::-webkit-scrollbar{display:none;}
-.le{font-size:9px;line-height:1.8;padding-left:4px;border-left:1px solid transparent;animation:fade .08s ease;white-space:pre-wrap;word-break:break-all;}
-.le.s{color:#1a5a1a;border-color:#0a2a0a;}.le.ok{color:#33ff33;border-color:#1a6a1a;}
-.le.e{color:#aa2222;border-color:#4a0a0a;}.le.w{color:#aaaa22;border-color:#4a4a0a;}
-.le.sig{color:#00aaff;border-color:#004a7a;}.le.in{color:#33cc33;}
+.fld{margin-bottom:13px;}
+.fld-lbl{font-size:8px;letter-spacing:4px;color:rgba(0,229,255,0.28);margin-bottom:5px;}
+.fld-row{width:100%;display:flex;align-items:center;gap:8px;border:1px solid rgba(0,229,255,0.16);
+  padding:8px 12px;background:rgba(0,229,255,0.015);}
+.fld-row input{flex:1;background:transparent;border:none;outline:none;
+  color:var(--c);font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:2px;caret-color:var(--c);}
+.fld-row input::placeholder{color:rgba(0,229,255,0.11);}
+.fp{color:rgba(0,229,255,0.3);font-size:12px;}
 
-/* PANNEAU CENTRAL */
-#mctr{flex:1 1 0;display:flex;flex-direction:column;overflow:hidden;}
+.mbtn-main{width:100%;padding:13px;margin-top:5px;background:rgba(0,229,255,0.05);
+  border:1px solid rgba(0,229,255,0.32);color:var(--c);font-family:'Orbitron',monospace;
+  font-size:11px;font-weight:700;letter-spacing:5px;cursor:pointer;transition:all .25s;
+  position:relative;overflow:hidden;}
+.mbtn-main::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,0.09),transparent);transition:left .4s;}
+.mbtn-main:hover{background:rgba(0,229,255,0.11);border-color:var(--c);box-shadow:0 0 20px rgba(0,229,255,0.18);}
+.mbtn-main:hover::before{left:100%;}
+.mbtn-main:disabled{opacity:0.22;cursor:not-allowed;}
 
-/* Mon panneau de données */
-#my-panel{flex:0 0 auto;border-bottom:1px solid #0a2a0a;padding:10px 14px;background:#020602;}
-.mp-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.mp-t{font-size:8px;letter-spacing:4px;color:#2a8a2a;}
-.mp-role{font-size:8px;letter-spacing:2px;padding:1px 8px;border:1px solid #1a4a1a;color:#2a8a2a;}
+#cmsg{font-size:9px;color:var(--err);margin-top:10px;min-height:16px;letter-spacing:1px;}
 
-.panel-data{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;}
+/* ══ ÉCRAN 2 : ATTENTE ══ */
+.wpnl{width:560px;padding:28px 32px;}
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;
+  font-size:8px;letter-spacing:4px;color:rgba(0,229,255,0.35);font-family:'Orbitron',sans-serif;
+  padding-bottom:8px;border-bottom:1px solid rgba(0,229,255,0.07);margin-bottom:16px;}
 
-/* Blocs de données */
-.dblk{border:1px solid #0d3a0d;background:#020802;padding:8px 10px;min-width:110px;}
-.db-t{font-size:7px;letter-spacing:3px;color:#1a5a1a;margin-bottom:5px;border-bottom:1px solid #0a2a0a;padding-bottom:3px;}
-.db-row{display:flex;gap:6px;align-items:center;padding:2px 0;}
-.db-k{font-size:8px;color:#1a5a1a;min-width:55px;}
-.db-v{font-family:'VT323',monospace;font-size:17px;color:#33ff33;}
-.db-v.r{color:#cc2222;}.db-v.w{color:#ccaa00;}.db-v.d{color:#1a6a1a;}
+.hex-ring{display:flex;align-items:center;justify-content:center;margin:14px 0;}
+.hring svg{width:80px;height:80px;animation:rot 4s linear infinite;}
 
-/* Code erreur mis en avant */
-.err-blk{border:1px solid #4a0000;background:#0a0000;padding:10px 14px;text-align:center;}
-.eb-pre{font-size:7px;letter-spacing:3px;color:#6a2222;margin-bottom:3px;}
-.eb-val{font-family:'VT323',monospace;font-size:40px;color:#ff3333;text-shadow:0 0 10px rgba(255,51,51,.4);letter-spacing:4px;}
-.eb-post{font-size:7px;color:#4a1a1a;margin-top:3px;}
+.aslots{display:flex;flex-direction:column;gap:5px;margin-bottom:18px;}
+.asl{display:flex;align-items:center;gap:12px;padding:8px 12px;
+  border:1px solid rgba(0,229,255,0.07);background:rgba(0,229,255,0.015);transition:all .4s;}
+.asl.on{border-color:rgba(0,229,255,0.24);background:rgba(0,229,255,0.05);}
+.asl-n{font-size:10px;color:rgba(0,229,255,0.2);width:26px;letter-spacing:2px;}
+.asl-bar{flex:1;height:1px;background:rgba(0,229,255,0.06);}
+.asl-fill{height:100%;background:var(--c);width:0;transition:width .6s;box-shadow:0 0 5px rgba(0,229,255,0.5);}
+.asl-nm{font-size:11px;letter-spacing:2px;color:rgba(0,229,255,0.28);min-width:110px;text-align:right;}
+.asl.on .asl-nm{color:var(--c);}
+.asl-dot{width:8px;height:8px;border-radius:50%;background:rgba(0,229,255,0.1);flex-shrink:0;transition:all .3s;}
+.asl.on .asl-dot{background:var(--ok);box-shadow:0 0 7px rgba(57,255,143,0.8);animation:blink 1.2s ease-in-out infinite;}
 
-/* Table de correspondance */
-.tblk{border:1px solid #0d3a0d;background:#020802;padding:8px 10px;}
-.tbl-t{font-size:7px;letter-spacing:3px;color:#1a5a1a;margin-bottom:5px;}
-.tbl-grid{display:grid;gap:2px;}
-.tbl-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.tbl-cell{padding:2px 6px;font-size:9px;border:1px solid #0a2a0a;}
-.tbl-cell .k{color:#1a5a1a;font-size:8px;}
-.tbl-cell .v{color:#2a8a2a;font-family:'VT323',monospace;font-size:15px;}
-.tbl-row.hl .tbl-cell{border-color:#1a6a1a;background:#030e03;}
-.tbl-row.hl .tbl-cell .v{color:#33ff33;}
+.wcnt{font-family:'Orbitron',sans-serif;font-size:46px;font-weight:900;
+  color:var(--c);text-align:center;letter-spacing:4px;
+  text-shadow:0 0 18px rgba(0,229,255,0.5);margin:14px 0 5px;}
+.wreq{font-size:9px;letter-spacing:3px;color:rgba(0,229,255,0.2);text-align:center;}
+.wreq span{color:rgba(0,229,255,0.48);}
 
-/* Signaux / fréquences */
-.sig-blk{border:1px solid #0d3a0d;background:#020802;padding:8px 10px;min-width:150px;}
-.sig-row{margin-bottom:6px;}
-.sig-lbl{display:flex;justify-content:space-between;font-size:8px;color:#1a5a1a;margin-bottom:3px;}
-.sig-lbl b{font-family:'VT323',monospace;font-size:15px;color:#33ff33;}
-.sig-bar{height:5px;background:#0a1a0a;}
-.sig-fill{height:100%;background:#33ff33;transition:width .3s;}
-.sig-fill.r{background:#cc2222;}.sig-fill.w{background:#ccaa00;}
+.abort{display:block;width:100%;padding:8px;margin-top:14px;
+  background:transparent;border:1px solid rgba(255,59,59,0.14);
+  color:rgba(255,59,59,0.28);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;
+  cursor:pointer;text-align:center;transition:all .2s;}
+.abort:hover{color:var(--err);border-color:rgba(255,59,59,0.48);background:rgba(255,59,59,0.03);}
 
-/* Code secteur */
-.sec-blk{border:1px solid #0d3a0d;background:#020802;padding:8px 10px;}
-.sec-row{display:flex;align-items:center;gap:8px;padding:3px 5px;border:1px solid transparent;margin-bottom:2px;}
-.sec-row.hl{border-color:#1a6a1a;background:#030e03;}
-.sec-id{font-size:8px;color:#1a5a1a;min-width:24px;}
-.sec-code{font-family:'VT323',monospace;font-size:17px;color:#2a8a2a;}
-.sec-row.hl .sec-code{color:#33ff33;}
+/* ══ ÉCRAN 3 : MISSION ══ */
+#sm{flex-direction:column;padding:0;}
+#mhdr{flex:0 0 48px;width:100%;background:rgba(2,12,16,0.98);
+  border-bottom:1px solid rgba(0,229,255,0.11);
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
+.mhl{display:flex;align-items:center;gap:14px;}
+.mht{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:5px;color:var(--c);}
+.mhs{font-size:9px;letter-spacing:3px;color:rgba(0,229,255,0.24);}
+.mhd{width:6px;height:6px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 6px rgba(57,255,143,0.8);animation:blink 1.2s infinite;}
+#mtimer{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;
+  color:var(--c);letter-spacing:3px;font-variant-numeric:tabular-nums;}
+#mtimer.w{color:var(--warn);}
+#mtimer.d{color:var(--err);animation:blink .4s step-end infinite;}
 
-/* ──────────────────────────────
-   ZONE DE COMMANDE
-────────────────────────────── */
-#cmdzone{flex:1 1 0;display:flex;flex-direction:column;overflow:hidden;}
-.cz-hdr{padding:5px 14px;border-bottom:1px solid #0a2a0a;font-size:7px;letter-spacing:3px;color:#1a5a1a;}
+#mbody{flex:1 1 0;min-height:0;display:flex;flex-direction:row;overflow:hidden;}
 
-.cz-body{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:8px;}
-.cz-body::-webkit-scrollbar{display:none;}
+#mlog{flex:0 0 230px;border-right:1px solid rgba(0,229,255,0.06);
+  padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:1px;
+  background:rgba(2,8,12,0.8);}
+#mlog::-webkit-scrollbar{display:none;}
+.lge{font-size:9px;line-height:2;padding-left:7px;border-left:2px solid transparent;}
+.lge.s{color:rgba(0,229,255,0.18);border-left-color:rgba(0,229,255,0.07);}
+.lge.ok{color:rgba(57,255,143,0.65);border-left-color:rgba(57,255,143,0.28);}
+.lge.e{color:rgba(255,59,59,0.65);border-left-color:rgba(255,59,59,0.28);}
+.lge.w{color:rgba(245,196,0,0.65);border-left-color:rgba(245,196,0,0.28);}
+.lge.sig{color:rgba(0,229,255,0.55);border-left-color:rgba(0,229,255,0.38);}
 
-/* Bannière étape actuelle */
-.step-card{border:1px solid #1a4a1a;background:#020802;padding:10px 12px;}
-.sc-num{font-size:7px;letter-spacing:3px;color:#1a5a1a;margin-bottom:4px;}
-.sc-desc{font-size:10px;color:#2a8a2a;line-height:1.7;}
-.sc-desc b{color:#33ff33;}
-.sc-desc .role-tag{display:inline-block;border:1px solid #1a4a1a;padding:0 4px;
-  font-size:8px;letter-spacing:2px;color:#33aa33;}
-.sc-who{font-size:8px;letter-spacing:1px;color:#1a5a1a;margin-top:6px;border-top:1px solid #0a2a0a;padding-top:5px;}
-.sc-who b{color:#00aaff;}
+#mgame{flex:1 1 0;min-width:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:20px;position:relative;}
 
-/* Terminal d'entrée */
-.term-line{display:flex;align-items:center;gap:7px;border:1px solid #1a4a1a;padding:6px 10px;background:#020802;}
-.term-ps{font-size:10px;color:#2a6a2a;}
-.term-line input{flex:1;background:transparent;border:none;outline:none;
-  color:#33ff33;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;caret-color:#33ff33;text-transform:uppercase;}
-.term-line input::placeholder{color:#0a3a0a;text-transform:none;}
-.term-line input:disabled{opacity:.25;}
+#mright{flex:0 0 195px;border-left:1px solid rgba(0,229,255,0.06);
+  padding:12px;display:flex;flex-direction:column;gap:7px;
+  background:rgba(2,8,12,0.8);overflow-y:auto;}
+#mright::-webkit-scrollbar{display:none;}
+.rs-t{font-size:7px;letter-spacing:4px;color:rgba(0,229,255,0.18);
+  margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid rgba(0,229,255,0.05);}
+.agc{padding:7px 9px;border:1px solid rgba(0,229,255,0.07);background:rgba(0,229,255,0.015);}
+.agc.me{border-color:rgba(0,229,255,0.22);background:rgba(0,229,255,0.045);}
+.agn{font-size:9px;letter-spacing:2px;color:var(--c);display:flex;justify-content:space-between;}
+.agu{font-size:7px;color:rgba(0,229,255,0.28);letter-spacing:1px;}
+.ags{font-size:8px;color:rgba(0,229,255,0.22);margin-top:2px;letter-spacing:1px;}
 
-.run-btn{padding:9px;background:transparent;border:1px solid #1a5a1a;
-  color:#33ff33;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;cursor:pointer;transition:.14s;}
-.run-btn:hover:not(:disabled){background:#030e03;border-color:#33ff33;}
-.run-btn:disabled{opacity:.18;cursor:not-allowed;}
+.gee{display:flex;align-items:center;gap:7px;padding:5px 8px;
+  border:1px solid rgba(0,229,255,0.05);margin-bottom:3px;}
+.geh{font-size:17px;color:rgba(0,229,255,0.14);}
+.geh.act{color:var(--warn);text-shadow:0 0 7px rgba(245,196,0,0.55);animation:blink .9s step-end infinite;}
+.geh.dn{color:var(--ok);text-shadow:0 0 7px rgba(57,255,143,0.55);}
+.gen-txt{}
+.gent{font-size:8px;letter-spacing:2px;color:rgba(0,229,255,0.28);}
+.gent.act{color:var(--warn);}.gent.dn{color:var(--ok);}
 
-.step-fb{font-size:9px;letter-spacing:1px;min-height:15px;}
-.step-fb.ok{color:#33ff33;}.step-fb.err{color:#cc2222;}
-.step-fb.wait{color:#2a6a2a;animation:blink 1.1s ease-in-out infinite;}
+#mfoot{flex:0 0 32px;width:100%;background:rgba(2,12,16,0.98);
+  border-top:1px solid rgba(0,229,255,0.07);
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;}
+.mft{font-size:7px;letter-spacing:3px;color:rgba(0,229,255,0.11);}
+.mfl{font-size:8px;letter-spacing:3px;color:rgba(57,255,143,0.38);animation:blink 1.8s ease-in-out infinite;}
 
-/* ──────────────────────────────
-   PANNEAU DROIT
-────────────────────────────── */
-#mright{flex:0 0 180px;border-left:1px solid #0a2a0a;display:flex;flex-direction:column;background:#020602;}
-.mr-s{padding:8px 10px;border-bottom:1px solid #0a2a0a;}
-.mr-t{font-size:7px;letter-spacing:3px;color:#1a5a1a;margin-bottom:5px;}
-.agr{display:flex;align-items:center;gap:5px;padding:3px 0;}
-.agr-d{width:4px;height:4px;border-radius:50%;background:#1a4a1a;}
-.agr-d.on{background:#33ff33;box-shadow:0 0 4px #33ff33;animation:pulse 1.3s infinite;}
-.agr-nm{font-size:8px;letter-spacing:1px;color:#2a6a2a;flex:1;}
-.agr-nm.me{color:#33ff33;}
-.agr-role{font-size:7px;color:#1a4a1a;}
+/* ══ JEUX ══ */
+.gm{display:none;flex-direction:column;align-items:center;gap:14px;width:100%;}
+.gm.on{display:flex;}
+.gh{text-align:center;}
+.gt{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:4px;color:var(--c);margin-bottom:4px;}
+.gsub{font-size:9px;letter-spacing:.5px;color:rgba(0,229,255,0.28);line-height:2;text-align:center;}
+.gres{font-size:10px;letter-spacing:2px;text-align:center;min-height:18px;color:rgba(0,229,255,0.28);transition:all .3s;}
+.gres.ok{color:var(--ok);text-shadow:0 0 10px rgba(57,255,143,0.5);}
+.gres.fail{color:var(--err);}
 
-/* Progression étapes */
-.prog{padding:8px 10px;}
-.pr-row{display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid #050d05;}
-.pr-n{font-size:8px;color:#1a4a1a;width:14px;}
-.pr-txt{font-size:8px;color:#1a4a1a;flex:1;line-height:1.4;}
-.pr-ic{font-size:8px;color:#1a4a1a;}
-.pr-row.done .pr-txt{color:#2a6a2a;}.pr-row.done .pr-ic{color:#33ff33;}
-.pr-row.active .pr-txt{color:#33ff33;}.pr-row.active .pr-n{color:#33ff33;}.pr-row.active .pr-ic{color:#33ff33;}
+/* G1 */
+.nbox{width:300px;height:110px;position:relative;border:1px solid rgba(0,229,255,0.14);
+  background:rgba(0,10,15,0.92);overflow:hidden;}
+.nlbl{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:7px;letter-spacing:4px;color:rgba(0,229,255,0.18);}
+.ntrack{position:absolute;bottom:14px;left:20px;right:20px;height:3px;background:rgba(0,229,255,0.06);}
+.nzone{position:absolute;bottom:14px;height:3px;background:rgba(57,255,143,0.28);box-shadow:0 0 8px rgba(57,255,143,0.45);}
+#ndl{position:absolute;bottom:14px;width:2px;background:var(--c);box-shadow:0 0 10px rgba(0,229,255,0.9);height:55px;}
 
-/* Erreurs */
-.errs-s{padding:8px 10px;margin-top:auto;border-top:1px solid #0a2a0a;}
-.err-dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;}
-.ed{width:9px;height:9px;border:1px solid #1a4a1a;}
-.ed.f{background:#4a0000;border-color:#6a0000;}
+.sags{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;}
+.sag{padding:6px 13px;border:1px solid rgba(0,229,255,0.11);font-size:9px;letter-spacing:2px;
+  color:rgba(0,229,255,0.28);background:rgba(0,10,15,0.8);transition:all .15s;min-width:85px;text-align:center;}
+.sag.h{border-color:var(--ok);color:var(--ok);background:rgba(57,255,143,0.05);
+  box-shadow:0 0 10px rgba(57,255,143,0.18);}
+.sag.ma{border-style:dashed;}
 
-#mfoot{flex:0 0 24px;border-top:1px solid #0a2a0a;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#020602;}
-.mft{font-size:7px;letter-spacing:2px;color:#0a3a0a;}
+.hbtn{padding:12px 34px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.24);
+  color:var(--c);font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:4px;
+  cursor:pointer;user-select:none;-webkit-user-select:none;transition:all .15s;}
+.hbtn:hover,.hbtn.on{background:rgba(0,229,255,0.09);box-shadow:0 0 18px rgba(0,229,255,0.18);}
 
-/* Overlay flashes */
-#eov{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none;animation:err .12s ease 5;}
-#gov{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none;animation:ok .15s ease 4;}
+.atts{display:flex;gap:4px;}
+.at{width:14px;height:3px;background:rgba(0,229,255,0.09);}
+.at.f{background:rgba(255,59,59,0.5);}
+.at.ok{background:var(--ok);}
 
-/* ──────────────────────────────
-   SUCCÈS
-────────────────────────────── */
-#ssuc{background:#000;padding:20px;}
-.sw{width:100%;max-width:480px;border:1px solid #1a4a1a;background:#050505;padding:26px 30px;}
-.sw-tag{font-size:7px;letter-spacing:5px;color:#2a6a2a;margin-bottom:10px;}
-.sw-title{font-family:'VT323',monospace;font-size:48px;color:#33ff33;letter-spacing:6px;
-  text-shadow:0 0 18px rgba(51,255,51,.55);animation:glitch 4s ease-in-out infinite;margin-bottom:12px;}
-.sw-lines{margin-bottom:14px;}
-.sw-line{font-size:9px;line-height:2.1;color:#2a6a2a;}
-.sw-line::before{content:'> ';}
-.sw-line.h{color:#33aa33;}.sw-line.c{color:#00aaff;}
-.sw-sep{border-top:1px solid #0a2a0a;padding-top:8px;font-size:7px;letter-spacing:2px;color:#0a3a0a;}
+/* G2 */
+.jauges{display:flex;gap:15px;align-items:flex-end;height:145px;}
+.jcol{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.jnm{font-size:7px;letter-spacing:2px;color:rgba(0,229,255,0.22);}
+.jtr{width:28px;height:108px;border:1px solid rgba(0,229,255,0.11);background:rgba(0,10,15,0.9);position:relative;overflow:hidden;}
+.jfill{position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(180deg,rgba(0,150,200,0.35),var(--c));
+  box-shadow:0 0 7px rgba(0,229,255,0.45);transition:height .12s;}
+.jfill.w{background:linear-gradient(180deg,rgba(200,150,0,0.35),var(--warn));box-shadow:0 0 7px rgba(245,196,0,0.45);}
+.jfill.d{background:linear-gradient(180deg,rgba(200,50,50,0.35),var(--err));box-shadow:0 0 7px rgba(255,59,59,0.45);}
+.jpct{font-size:9px;color:rgba(0,229,255,0.28);font-variant-numeric:tabular-nums;}
+
+.rtm{font-size:22px;letter-spacing:6px;color:rgba(0,229,255,0.14);transition:color .1s,text-shadow .1s;}
+.rtm.p{color:var(--c);text-shadow:0 0 14px rgba(0,229,255,0.55);}
+.hbtn2{padding:12px 34px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.24);
+  color:var(--c);font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:4px;
+  cursor:pointer;user-select:none;-webkit-user-select:none;transition:all .15s;}
+.hbtn2:hover,.hbtn2.on{background:rgba(0,229,255,0.09);box-shadow:0 0 18px rgba(0,229,255,0.18);}
+
+/* G3 */
+.cpnl2{width:330px;border:1px solid rgba(0,229,255,0.11);background:rgba(0,10,15,0.92);padding:15px;}
+.cplbl{font-size:7px;letter-spacing:4px;color:rgba(0,229,255,0.2);margin-bottom:11px;}
+.swl{display:flex;flex-direction:column;gap:5px;}
+.sw{display:flex;align-items:center;gap:9px;padding:7px 11px;
+  border:1px solid rgba(0,229,255,0.07);cursor:pointer;transition:all .14s;user-select:none;}
+.sw:hover{border-color:rgba(0,229,255,0.24);background:rgba(0,229,255,0.035);}
+.sw.on{border-color:var(--c);background:rgba(0,229,255,0.07);box-shadow:0 0 10px rgba(0,229,255,0.1);}
+.sw.lk{opacity:.28;cursor:not-allowed;pointer-events:none;}
+.swid{font-size:10px;color:rgba(0,229,255,0.28);width:16px;}
+.swline{flex:1;height:1px;background:rgba(0,229,255,0.06);}
+.swline.on{background:var(--c);box-shadow:0 0 4px rgba(0,229,255,0.48);}
+.swsym{font-size:15px;color:rgba(0,229,255,0.38);width:22px;text-align:right;}
+.sw.on .swsym{color:var(--c);text-shadow:0 0 7px rgba(0,229,255,0.6);}
+
+.fbx{width:330px;border:1px solid rgba(0,229,255,0.07);background:rgba(0,10,15,0.8);padding:11px 14px;}
+.fbt{font-size:7px;letter-spacing:4px;color:rgba(0,229,255,0.18);margin-bottom:7px;}
+.fbtx{font-size:9px;color:rgba(0,229,255,0.32);line-height:2;letter-spacing:.5px;}
+.fbtx span{color:var(--c);}
+
+.g3t{font-family:'Orbitron',sans-serif;font-size:52px;font-weight:900;
+  color:var(--c);letter-spacing:4px;text-shadow:0 0 18px rgba(0,229,255,0.48);
+  font-variant-numeric:tabular-nums;transition:color .3s,text-shadow .3s;}
+.g3t.w{color:var(--warn);text-shadow:0 0 18px rgba(245,196,0,0.48);}
+.g3t.d{color:var(--err);text-shadow:0 0 18px rgba(255,59,59,0.48);animation:blink .3s step-end infinite;}
+
+/* ══ SUCCÈS ══ */
+#ssuc{flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+.sring{width:110px;height:110px;border:2px solid var(--ok);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 28px rgba(57,255,143,0.35),inset 0 0 18px rgba(57,255,143,0.08);
+  animation:pulse 2s ease-in-out infinite;}
+.sico{font-family:'Orbitron',sans-serif;font-size:30px;color:var(--ok);}
+.stit{font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;letter-spacing:8px;
+  color:var(--ok);text-shadow:0 0 28px rgba(57,255,143,0.55);animation:glitch 5s ease-in-out infinite;}
+.slines{text-align:center;display:flex;flex-direction:column;gap:5px;}
+.sl{font-size:9px;letter-spacing:3px;color:rgba(57,255,143,0.32);line-height:2;}
+.sl.hi{color:rgba(57,255,143,0.58);}
+.sl.lo{color:rgba(0,229,255,0.18);}
+
+/* Overlay erreur */
+#eov{position:fixed;inset:0;z-index:9990;pointer-events:none;display:none;animation:errfl .15s ease-in-out 4;}
 </style>
 </head>
 <body>
-<div class="scanline"></div>
+<div class="scan"></div>
 <div id="eov"></div>
-<div id="gov"></div>
 
-<!-- CONNEXION -->
+<!-- Grille hex de fond -->
+<div id="bg">
+<svg width="100%" height="100%" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <pattern id="hp" patternUnits="userSpaceOnUse" width="60" height="52">
+      <polygon points="30,2 58,17 58,35 30,50 2,35 2,17" fill="none" stroke="rgba(0,229,255,0.055)" stroke-width="0.6"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="700" fill="url(#hp)"/>
+  <path d="M0 350 L180 350 L200 330 L380 330" fill="none" stroke="rgba(0,229,255,0.055)" stroke-width="1"/>
+  <path d="M1200 200 L950 200 L930 220 L680 220 L660 200 L480 200" fill="none" stroke="rgba(0,229,255,0.055)" stroke-width="1"/>
+  <circle cx="380" cy="330" r="3" fill="rgba(0,229,255,0.14)"/>
+  <circle cx="660" cy="200" r="3" fill="rgba(0,229,255,0.14)"/>
+</svg>
+</div>
+
+<!-- ══ S1 CONNEXION ══ -->
 <div class="scr" id="sc">
-<div class="box">
-  <div class="boxbar">
-    <div class="boxbar-t">BASTION v2.3 · GÉN-01 · PROTOCOLE D'URGENCE · T.LEVY 2029</div>
+  <div class="logo-wrap">
+    <span class="logo">BASTION</span>
+    <div class="logo-sub">PROTOCOLE D'URGENCE · GÉNÉRATEURS DE SECOURS</div>
+    <div class="logo-auth">CONÇU PAR T. LEVY · 2029 · USAGE RESTREINT MOSSEBA</div>
   </div>
-  <div class="boxb">
+  <div class="pnl cpnl">
+    <div class="ct tl"></div><div class="ct tr"></div><div class="ct bl"></div><div class="ct br"></div>
     <div class="boot" id="boot"></div>
-    <div class="mtog">
-      <div class="mtbtn on" id="mc" onclick="setMode('c')">[ CRÉER SESSION ]</div>
-      <div class="mtbtn" id="mj" onclick="setMode('j')">[ REJOINDRE ]</div>
+    <div class="mode-row">
+      <div class="mbtn on" id="mc" onclick="setMode('c')">CRÉER UNE SESSION</div>
+      <div class="mbtn" id="mj" onclick="setMode('j')">REJOINDRE</div>
     </div>
     <div id="cb">
-      <div class="code-box">
-        <div class="cb-l">CODE DE SESSION</div>
-        <div class="cb-c" id="gc">------</div>
-        <div class="cb-n">Transmettez ce code aux autres agents</div>
-        <button class="cb-re" onclick="regenCode()">↺</button>
+      <div class="sess-disp">
+        <div class="sess-lbl">CODE DE SESSION GÉNÉRÉ</div>
+        <div class="sess-code" id="gc">------</div>
+        <div class="sess-note">Transmettez ce code aux autres agents</div>
+        <button class="sess-re" onclick="regenCode()">↺</button>
       </div>
-      <div class="cnt-l">
-        <span class="cnt-lbl">AGENTS REQUIS</span>
+      <div class="cnt-row">
+        <div class="cnt-lbl">AGENTS REQUIS</div>
         <div class="cnt-ctrl">
-          <button class="cbt" onclick="adjCnt(-1)">−</button>
+          <button class="cbtn" onclick="adjCnt(-1)">−</button>
           <div class="cval" id="cv">3</div>
-          <button class="cbt" onclick="adjCnt(1)">+</button>
+          <button class="cbtn" onclick="adjCnt(1)">+</button>
         </div>
-        <span style="font-size:7px;color:#1a3a1a">2 – 4</span>
+        <div class="cnote">MIN 2 · MAX 6</div>
       </div>
       <div class="fld">
-        <div class="fld-l">IDENTIFIANT AGENT</div>
-        <div class="fld-r"><span class="fld-ps">root@bastion:~$</span>
-          <input id="nc" maxlength="10" placeholder="callsign" autocomplete="off" spellcheck="false"/></div>
+        <div class="fld-lbl">VOTRE IDENTIFIANT</div>
+        <div class="fld-row"><span class="fp">&gt;</span><input type="text" id="nc" maxlength="10" placeholder="CALLSIGN" autocomplete="off" spellcheck="false"/></div>
       </div>
-      <button class="xbtn" onclick="doCreate()">./INIT_SESSION.sh ↵</button>
+      <button class="mbtn-main" onclick="doCreate()">INITIALISER LA SESSION</button>
     </div>
     <div id="jb" style="display:none">
-      <div class="fld"><div class="fld-l">CODE SESSION</div>
-        <div class="fld-r"><span class="fld-ps">root@bastion:~$</span>
-          <input id="sj" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false"/></div></div>
-      <div class="fld"><div class="fld-l">IDENTIFIANT AGENT</div>
-        <div class="fld-r"><span class="fld-ps">root@bastion:~$</span>
-          <input id="nj" maxlength="10" placeholder="callsign" autocomplete="off" spellcheck="false"/></div></div>
-      <button class="xbtn" onclick="doJoin()">./CONNECT.sh ↵</button>
+      <div class="fld">
+        <div class="fld-lbl">CODE DE SESSION</div>
+        <div class="fld-row"><span class="fp">&gt;</span><input type="text" id="sj" maxlength="6" placeholder="ENTREZ LE CODE" autocomplete="off" spellcheck="false"/></div>
+      </div>
+      <div class="fld">
+        <div class="fld-lbl">VOTRE IDENTIFIANT</div>
+        <div class="fld-row"><span class="fp">&gt;</span><input type="text" id="nj" maxlength="10" placeholder="CALLSIGN" autocomplete="off" spellcheck="false"/></div>
+      </div>
+      <button class="mbtn-main" onclick="doJoin()">ÉTABLIR CONNEXION</button>
     </div>
     <div id="cmsg"></div>
   </div>
 </div>
-</div>
 
-<!-- ATTENTE -->
+<!-- ══ S2 ATTENTE ══ -->
 <div class="scr off" id="sw">
-<div class="wbox">
-  <div class="wbhdr"><span>CANAL SÉCURISÉ</span><span id="wcode" style="color:#33aa33">------</span></div>
-  <div class="wbb">
-    <div style="font-size:9px;letter-spacing:1px;color:#2a6a2a;margin-bottom:10px;">En attente des autres agents...</div>
-    <div class="alist" id="alist"></div>
-    <div class="bigcnt" id="wcnt">0/0</div>
-    <div class="bcnote">agents · <b id="wreq">0</b> requis pour démarrer</div>
-    <button class="abnd" onclick="doAbort()">[ abandonner ]</button>
+  <div class="pnl wpnl">
+    <div class="ct tl"></div><div class="ct tr"></div><div class="ct bl"></div><div class="ct br"></div>
+    <div class="sec-hdr">CANAL SÉCURISÉ<span class="tag" id="wcode">------</span></div>
+    <div class="hex-ring"><div class="hring"><svg viewBox="0 0 80 80" fill="none">
+      <polygon points="40,4 76,22 76,58 40,76 4,58 4,22" stroke="rgba(0,229,255,0.14)" stroke-width="1"/>
+      <polygon points="40,13 68,28 68,52 40,67 12,52 12,28" stroke="rgba(0,229,255,0.07)" stroke-width=".5"/>
+      <path d="M40 4 L76 22" stroke="rgba(0,229,255,0.38)" stroke-width="1.5" stroke-dasharray="3,50"/>
+    </svg></div></div>
+    <div class="aslots" id="aslots"></div>
+    <div class="wcnt" id="wcnt">0 / 0</div>
+    <div class="wreq">AGENTS CONNECTÉS · <span id="wreq">0</span> REQUIS</div>
+    <button class="abort" onclick="doAbort()">ANNULER · QUITTER LA SESSION</button>
   </div>
 </div>
-</div>
 
-<!-- MISSION -->
+<!-- ══ S3 MISSION ══ -->
 <div class="scr off" id="sm">
   <div id="mhdr">
     <div class="mhl">
-      <div class="mh-live"></div>
-      <div class="mh-t">BASTION · GÉN-01 · RÉAMORÇAGE D'URGENCE</div>
-      <div class="mh-s">SES/<span id="mhc">------</span></div>
+      <div class="mhd"></div>
+      <div class="mht ot">BASTION · OP-NORD</div>
+      <div class="mhs">SESSION · <span id="mhc">------</span></div>
     </div>
-    <div id="mtimer">--:--</div>
+    <div id="mtimer" class="ot">--:--</div>
   </div>
   <div id="mbody">
     <div id="mlog">
-      <div class="mlog-h">JOURNAL SYSTÈME</div>
-      <div class="mlog-b" id="mlogb">
-        <div class="le s">[init] bastion chargé</div>
-      </div>
+      <div class="lge s">[bastion] protocole d'urgence chargé</div>
+      <div class="lge s">[bastion] chiffrement actif · canal sécurisé</div>
     </div>
-    <div id="mctr">
-      <div id="my-panel">
-        <div class="mp-hdr">
-          <div class="mp-t">PANNEAU · <span id="my-role"></span></div>
-          <div class="mp-role" id="my-role-badge">--</div>
+    <div id="mgame">
+      <!-- G1 -->
+      <div class="gm" id="g1">
+        <div class="gh"><div class="gt">GÉN. 01 · SYNCHRONISATION</div>
+        <div class="gsub">Maintenez tous ensemble quand l'aiguille<br>entre dans la zone verte.<br>Coordonnez-vous à voix haute.</div></div>
+        <div class="nbox">
+          <div class="nlbl">PRESSION REQUISE · ZONE VERTE</div>
+          <div class="ntrack"></div>
+          <div class="nzone" id="nzone"></div>
+          <div id="ndl"></div>
         </div>
-        <div class="panel-data" id="panel-data"></div>
+        <div class="sags" id="sags"></div>
+        <button class="hbtn" id="g1btn" onmousedown="g1H(true)" onmouseup="g1H(false)" ontouchstart="g1H(true)" ontouchend="g1H(false)">MAINTENIR</button>
+        <div class="atts" id="atts"></div>
+        <div class="gres" id="g1r"></div>
       </div>
-      <div id="cmdzone">
-        <div class="cz-hdr">TERMINAL · COMMANDE DE RÉAMORÇAGE</div>
-        <div class="cz-body">
-          <div class="step-card" id="step-card">
-            <div class="sc-num">ÉTAPE <span id="sc-n">1</span> / <span id="sc-tot">4</span></div>
-            <div class="sc-desc" id="sc-desc">Initialisation...</div>
-            <div class="sc-who" id="sc-who"></div>
-          </div>
-          <div class="term-line" id="tline">
-            <span class="term-ps">root@bastion:~$</span>
-            <input id="cmd" placeholder="entrez la réponse..." autocomplete="off" spellcheck="false"
-              onkeydown="if(event.key==='Enter')submit()"/>
-          </div>
-          <button class="run-btn" id="rbtn" onclick="submit()" disabled>[ EXÉCUTER ]</button>
-          <div class="step-fb" id="sfb"></div>
+      <!-- G2 -->
+      <div class="gm" id="g2">
+        <div class="gh"><div class="gt">GÉN. 02 · MAINTIEN DE PRESSION</div>
+        <div class="gsub">Maintenez votre jauge au-dessus de 60%.<br>Chaque agent a un rythme différent.<br>Toutes les jauges doivent rester hautes pendant 4 secondes.</div></div>
+        <div class="jauges" id="jauges"></div>
+        <div class="rtm" id="rtm">◆</div>
+        <button class="hbtn2" id="g2btn" onmousedown="g2H(true)" onmouseup="g2H(false)" ontouchstart="g2H(true)" ontouchend="g2H(false)">MAINTENIR PRESSION</button>
+        <div class="gres" id="g2r"></div>
+      </div>
+      <!-- G3 -->
+      <div class="gm" id="g3">
+        <div class="gh"><div class="gt">GÉN. 03 · CIRCUIT AVEUGLE</div>
+        <div class="gsub">Vous ne voyez qu'une section du circuit.<br>Décrivez vos symboles. Activez dans le bon ordre global.</div></div>
+        <div class="g3t" id="g3t">45</div>
+        <div class="cpnl2">
+          <div class="cplbl">SECTION <span id="g3s">01</span> · AGENT <span id="g3a"></span></div>
+          <div class="swl" id="swl"></div>
         </div>
+        <div class="fbx">
+          <div class="fbt">FRAGMENT D'INFORMATION</div>
+          <div class="fbtx" id="fbtx">En attente...</div>
+        </div>
+        <div class="gres" id="g3r"></div>
       </div>
     </div>
     <div id="mright">
-      <div class="mr-s">
-        <div class="mr-t">AGENTS EN LIGNE</div>
-        <div id="agrows"></div>
-      </div>
-      <div class="prog mr-s">
-        <div class="mr-t">ÉTAPES</div>
-        <div id="prog"></div>
-      </div>
-      <div class="errs-s">
-        <div class="mr-t">ERREURS</div>
-        <div class="err-dots" id="edots"></div>
+      <div class="rs-t">AGENTS EN LIGNE</div>
+      <div id="agcards"></div>
+      <div style="margin-top:auto">
+        <div class="rs-t">GÉNÉRATEURS</div>
+        <div class="gee"><div class="geh" id="gh1">⬡</div><div class="gen-txt"><div class="gent" id="gt1">GÉN-01 · ATTENTE</div></div></div>
+        <div class="gee"><div class="geh" id="gh2">⬡</div><div class="gen-txt"><div class="gent" id="gt2">GÉN-02 · VERROUILLÉ</div></div></div>
+        <div class="gee"><div class="geh" id="gh3">⬡</div><div class="gen-txt"><div class="gent" id="gt3">GÉN-03 · VERROUILLÉ</div></div></div>
       </div>
     </div>
   </div>
   <div id="mfoot">
     <div class="mft">BASTION · T.LEVY · 2029</div>
-    <div class="mft" style="color:#1a5a1a;animation:pulse 2s infinite">● LIVE</div>
+    <div class="mfl">● CANAL ACTIF</div>
     <div class="mft">MOSSEBA · OP-NORD · 2035</div>
   </div>
 </div>
 
-<!-- SUCCÈS -->
+<!-- ══ S4 SUCCÈS ══ -->
 <div class="scr off" id="ssuc">
-<div class="sw">
-  <div class="sw-tag">BASTION · GÉN-01 · RÉAMORÇAGE COMPLET</div>
-  <div class="sw-title">NŒUD ACTIF</div>
-  <div class="sw-lines">
-    <div class="sw-line h">Séquence complète. Générateur 01 en ligne.</div>
-    <div class="sw-line h">Signal montant depuis Paleto Forest.</div>
-    <div class="sw-line c">MESS//IA · réception partielle · 34%</div>
-    <div class="sw-line c">FRAGMENT F-001 · acquis</div>
-    <div class="sw-line" style="color:#0a3a0a;margin-top:5px">...quelque chose d'autre arrive avec le signal.</div>
+  <div class="sring"><div class="sico">⬡</div></div>
+  <div class="stit">CONNEXION ÉTABLIE</div>
+  <div class="slines">
+    <div class="sl hi">Les trois générateurs sont en ligne.</div>
+    <div class="sl hi">Nœud de transmission · actif.</div>
+    <div class="sl" style="color:rgba(0,229,255,0.28)">Signal montant depuis Paleto Forest...</div>
+    <div class="sl">MESS//IA · RÉCEPTION PARTIELLE · 34%</div>
+    <div class="sl">FRAGMENT F-001 · ACQUIS</div>
+    <div class="sl lo" style="margin-top:8px">...et quelque chose d'autre arrive avec.</div>
   </div>
-  <div class="sw-sep">BASTION · T.LEVY · 2029 · MOSSEBA USAGE RESTREINT</div>
-</div>
 </div>
 
-
-<!-- ═══ SCRIPT UI (non-module, toujours exécuté) ═══ -->
-<script>
-// Généré AVANT Firebase — fonctions accessibles via onclick=
-const CC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-let _gcode=Array.from({length:6},()=>CC[Math.random()*CC.length|0]).join('');
-function regenCode(){
-  _gcode=Array.from({length:6},()=>CC[Math.random()*CC.length|0]).join('');
-  document.getElementById('gc').textContent=_gcode;
-}
-function setMode(m){
-  document.getElementById('mc').classList.toggle('on',m==='c');
-  document.getElementById('mj').classList.toggle('on',m==='j');
-  document.getElementById('cb').style.display=m==='c'?'':'none';
-  document.getElementById('jb').style.display=m==='j'?'':'none';
-}
-let _rc=3;
-function adjCnt(d){_rc=Math.max(2,Math.min(4,_rc+d));document.getElementById('cv').textContent=_rc;}
-
-// Boot messages
-[{t:'',m:'bastion v2.3 · chargement...'},{t:'ok',m:'canal chiffré · actif'},
- {t:'e',m:'ALERTE : générateur 01 · hors ligne'},
- {t:'w',m:'cause : surcharge nœud · corruption détectée'},
- {t:'',m:'protocole réamorçage distribué · chargé'},
- {t:'',m:'fragments distribués aux agents · connexion requise'}
-].forEach((b,i)=>setTimeout(()=>{
-  const el=document.getElementById('boot');if(!el)return;
-  const d=document.createElement('div');d.className='bl'+(b.t?' '+b.t:'');
-  d.textContent=b.m;el.appendChild(d);
-},180+i*200));
-
-// Sanitize inputs
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('gc').textContent=_gcode;
-  ['nc','nj','sj'].forEach(id=>{
-    const el=document.getElementById(id);if(!el)return;
-    el.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g,'');});
-  });
-});
-</script>
-
-<!-- ═══ SCRIPT FIREBASE (module) ═══ -->
+<!-- Firebase SDK -->
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getDatabase,ref,set,get,update,onValue}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import{getDatabase,ref,set,get,update,onValue,remove}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-// ═══════════════════════════════════
-// ⚙️  REMPLACE CES DEUX VALEURS
-//     → console.firebase.google.com
-// ═══════════════════════════════════
-const FIREBASE_API_KEY = "AIzaSyBR-82TgpJuRfqqDnN9SObcFYYPGSpw0PM";
-const FIREBASE_DB_URL  = "https://mosseba-6f5b4-default-rtdb.europe-west1.firebasedatabase.app";
-// ═══════════════════════════════════
+// ══ CONFIG FIREBASE ══
+// Projet public dédié BASTION — lecture/écriture ouverte sur /sessions/*
+const FB = initializeApp({
+  apiKey: "AIzaSyBR-82TgpJuRfqqDnN9SObcFYYPGSpw0PM",
+  databaseURL: "https://mosseba-6f5b4-default-rtdb.europe-west1.firebasedatabase.app"
+});
 
-const FB=initializeApp({apiKey:FIREBASE_API_KEY,databaseURL:FIREBASE_DB_URL});
-const DB=getDatabase(FB);
+const DB = getDatabase(FB);
 
-// Accès aux vars du script UI (partagées via window)
-let gcode=()=>window._gcode||'??????';
-let rc=()=>window._rc||3;
+// ══════ ÉTAT ══════
+let SES='',ME='',MID='',REQ=3,MIDX=-1,mode='c',gcode='';
+let cgen=0,misOn=false,g1done=false,g2done=false,g3done=false;
+let gSec=25*60,gIv=null;
+let _state=null; // cache local de l'état Firebase
 
-// ── STATE ──
-let SES='',ME='',MID='',REQ=3,MIDX=0;
-let misOn=false,genDone=false,_st=null;
-const MAX_ERR=5;
+// Référence Firebase pour la session courante
+function sesRef(path=''){return ref(DB,'sessions/'+SES+(path?'/'+path:''));}
 
-// ── FIREBASE UTILS ──
-const sref=(p='')=>ref(DB,'sessions/'+SES+(p?'/'+p:''));
-const gst=async()=>{try{const s=await get(sref());return s.exists()?s.val():null;}catch{return _st;}};
-const sst=async(s)=>{_st=s;try{await set(sref(),s);}catch(e){console.warn(e);}};
-const upd=async(p,v)=>{const o={};o['sessions/'+SES+'/'+p]=v;try{await update(ref(DB),o);}catch(e){console.warn(e);}};
+// ══ LECTURE / ÉCRITURE ══
+async function gst(){
+  try{const snap=await get(sesRef());return snap.exists()?snap.val():null;}
+  catch{return _state;}
+}
+async function sst(s){
+  _state=s;
+  try{await set(sesRef(),s);}catch(e){console.warn('Firebase write err',e);}
+}
+async function upd(path,val){
+  _state=null;
+  const o={};o['sessions/'+SES+'/'+path]=val;
+  try{await update(ref(DB),o);}catch(e){console.warn('Firebase upd err',e);}
+}
+
+// Écoute temps réel
 let _unsub=null;
-const watch=(cb)=>{if(_unsub)_unsub();_unsub=onValue(sref(),s=>{_st=s.exists()?s.val():null;cb(_st);});};
-const live=(s)=>s?.agents?Object.values(s.agents).filter(a=>Date.now()-a.ping<10000):[];
-const cMsg=(t,c='#cc0000')=>{const e=document.getElementById('cmsg');if(e){e.textContent=t;e.style.color=c;}};
+function watchState(cb){
+  if(_unsub)_unsub();
+  _unsub=onValue(sesRef(),(snap)=>{
+    _state=snap.exists()?snap.val():null;
+    cb(_state);
+  });
+}
 
-// ── CONNEXION ──
-window.doCreate=async()=>{
+function live(s){
+  if(!s?.agents)return[];
+  return Object.values(s.agents).filter(a=>Date.now()-a.ping<10000);
+}
+
+// ══════ BOOT ══════
+[{t:'s',m:'bastion v2.3 · initialisé'},{t:'ok',m:'protocole de chiffrement · actif'},
+ {t:'ok',m:'canal mosseba · disponible'},{t:'w',m:'zone nord · interférences détectées'},
+ {t:'s',m:'3 générateurs en attente · connexion requise'}].forEach((b,i)=>{
+  setTimeout(()=>{
+    const d=document.createElement('div');d.className='bl '+b.t;d.textContent=b.m;
+    document.getElementById('boot').appendChild(d);
+  },300+i*250);
+});
+
+// ══════ CODE ══════
+const C='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function genCode(){let s='';for(let i=0;i<6;i++)s+=C[Math.floor(Math.random()*C.length)];return s;}
+window.regenCode=function(){gcode=genCode();document.getElementById('gc').textContent=gcode;}
+window.regenCode();
+
+// ══════ MODE ══════
+window.setMode=function(m){
+  mode=m;
+  document.getElementById('mc').classList.toggle('on',m==='c');
+  document.getElementById('mj').classList.toggle('on',m==='j');
+  document.getElementById('cb').style.display=m==='c'?'block':'none';
+  document.getElementById('jb').style.display=m==='j'?'block':'none';
+}
+let rc=3;
+window.adjCnt=function(d){rc=Math.max(2,Math.min(6,rc+d));document.getElementById('cv').textContent=rc;}
+function msg(t,col='var(--err)'){const e=document.getElementById('cmsg');e.textContent=t;e.style.color=col;}
+
+// ══════ CONNEXION ══════
+window.doCreate=async function(){
   const n=document.getElementById('nc').value.trim().toUpperCase();
-  if(n.length<2){cMsg('> IDENTIFIANT TROP COURT');return;}
-  SES=window._gcode;REQ=window._rc;ME=n;await connect();
-};
-window.doJoin=async()=>{
+  if(n.length<2){msg('> IDENTIFIANT TROP COURT');return;}
+  SES=gcode;REQ=rc;ME=n;
+  await connect(true);
+}
+window.doJoin=async function(){
   const code=document.getElementById('sj').value.trim().toUpperCase();
   const n=document.getElementById('nj').value.trim().toUpperCase();
-  if(code.length<2){cMsg('> CODE INVALIDE');return;}
-  if(n.length<2){cMsg('> IDENTIFIANT TROP COURT');return;}
-  SES=code;ME=n;cMsg('> connexion...','#2a6a2a');
-  const s=await gst();if(!s){cMsg('> SESSION INTROUVABLE · VÉRIFIEZ LE CODE');return;}
-  REQ=s.required;await connect();
-};
-const connect=async()=>{
-  let s=await gst();
-  if(!s)s={agents:{},required:REQ,step:0,done:false,startTime:null,errors:0};
-  else REQ=s.required;
-  if(Object.values(s.agents||{}).some(a=>a.name===ME)){cMsg('> CALLSIGN DÉJÀ UTILISÉ');return;}
+  if(code.length<2){msg('> CODE SESSION INVALIDE');return;}
+  if(n.length<2){msg('> IDENTIFIANT TROP COURT');return;}
+  SES=code;ME=n;
+  msg('> CONNEXION EN COURS...','rgba(0,229,255,0.5)');
+  const s=await gst();
+  if(!s){msg('> SESSION INTROUVABLE · VÉRIFIEZ LE CODE');return;}
+  REQ=s.required;
+  await connect(false);
+}
+async function connect(isCreator){
+  const s=await gst();
+  let state=s||{agents:{},required:REQ,gen1:false,gen2:false,gen3:false,startTime:null};
+  if(!isCreator)REQ=state.required;
+  if(Object.values(state.agents||{}).some(a=>a.name===ME)){msg('> CALLSIGN DÉJÀ UTILISÉ');return;}
   MID='id_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
-  s.agents[MID]={name:ME,id:MID,ping:Date.now()};
-  await sst(s);
-  setInterval(()=>{if(SES&&MID)upd('agents/'+MID+'/ping',Date.now());},2000);
+  state.agents[MID]={name:ME,id:MID,ping:Date.now()};
+  await sst(state);
+  // Ping régulier
+  setInterval(async()=>{
+    if(!SES||!MID)return;
+    await upd('agents/'+MID+'/ping',Date.now());
+  },2000);
   show('sw');
   document.getElementById('wcode').textContent=SES;
   document.getElementById('wreq').textContent=REQ;
-  watch(onUpdate);
-};
-window.doAbort=async()=>{if(MID)await upd('agents/'+MID,null);location.reload();};
+  buildSlots();
+  startWatching();
+}
 
-// ── GÉNÉRATION DÉTERMINISTE ──
-const si=(seed,n,max)=>{let h=0;const s=seed+String(n);for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return Math.abs(h)%max;};
+// ══════ ATTENTE — écoute Firebase ══════
+function startWatching(){
+  watchState(s=>{
+    if(!s)return;
+    const ag=live(s),cnt=ag.length;
+    document.getElementById('wcnt').textContent=`${cnt} / ${REQ}`;
+    ag.forEach((a,i)=>{
+      document.getElementById('asl'+i)?.classList.add('on');
+      const an=document.getElementById('an'+i);if(an)an.textContent=a.name+(a.id===MID?' [VOUS]':'');
+      const af=document.getElementById('af'+i);if(af)af.style.width='100%';
+    });
+    for(let i=ag.length;i<REQ;i++){
+      document.getElementById('asl'+i)?.classList.remove('on');
+      const an=document.getElementById('an'+i);if(an)an.textContent='EN ATTENTE...';
+      const af=document.getElementById('af'+i);if(af)af.style.width='0';
+    }
+    if(cnt>=REQ&&!misOn)startMission(s);
+    // Sync mission en cours
+    if(misOn){
+      if(s.gen1&&cgen===1)cpGen(1,s);
+      if(s.gen2&&cgen===2)cpGen(2,s);
+      if(s.gen3&&cgen===3)cpGen(3,s);
+      // G1 sync holds
+      if(cgen===1&&s.g1h){
+        const ag2=live(s);
+        ag2.forEach(a=>{
+          const el=document.getElementById('sa_'+a.id);if(!el)return;
+          const held=a.id===MID?g1hold:(s.g1h[a.id]&&s.g1h[a.id].h&&Date.now()-s.g1h[a.id].t<1500);
+          el.classList.toggle('h',held);
+        });
+        checkG1sync(s,ag2);
+      }
+      // G2 sync jauges
+      if(cgen===2&&s.g2j){
+        const ag2=live(s);
+        ag2.forEach(a=>{
+          if(a.id===MID)return;
+          const jd=s.g2j[a.id];const act=jd&&Date.now()-jd.t<3000;const val=act?jd.v:0;
+          const jf=document.getElementById('jf_'+a.id);const jp=document.getElementById('jp_'+a.id);
+          if(jf){jf.style.height=val+'%';jf.className='jfill'+(val<30?' d':val<60?' w':'');}
+          if(jp)jp.textContent=Math.round(val)+'%';
+        });
+        checkG2win(s,ag2);
+      }
+    }
+  });
+}
 
-const ERR_CODES=['ERR::4F-A','ERR::7B-C','ERR::2E-D','ERR::9H-F','ERR::1K-G','ERR::5M-J','ERR::3P-L','ERR::8R-N'];
-const RELAY=['R-ALPHA','R-BRAVO','R-CHARLIE','R-DELTA','R-ECHO','R-FOXTROT','R-GOLF','R-HOTEL'];
-const SECTOR_IDS=['S1','S2','S3','S4','S5','S6','S7','S8'];
-const AUTH_CODES=['7741','3382','9156','4420','8813','2267','6634','5509'];
-const FREQ_A=[42,55,61,38,70,48,63,35];
-const FREQ_B=[21,33,18,44,29,37,26,52];
-
-let M={};
-const buildMission=()=>{
-  const ei=si(SES,'e',ERR_CODES.length),ri=si(SES,'r',RELAY.length),
-        si2=si(SES,'s',SECTOR_IDS.length),ai=si(SES,'a',AUTH_CODES.length),
-        fai=si(SES,'fa',FREQ_A.length),fbi=si(SES,'fb',FREQ_B.length);
-  M={errorCode:ERR_CODES[ei],relayName:RELAY[ri],sectorId:SECTOR_IDS[si2],authCode:AUTH_CODES[ai],
-     freqA:FREQ_A[fai],freqB:FREQ_B[fbi],
-     fakeErr:ERR_CODES[(ei+3)%ERR_CODES.length],fakeRelay:RELAY[(ri+2)%RELAY.length],
-     fakeSec:SECTOR_IDS[(si2+3)%SECTOR_IDS.length],fakeAuth:AUTH_CODES[(ai+2)%AUTH_CODES.length],
-     fakeFreqA:FREQ_A[(fai+2)%FREQ_A.length]};
-};
-
-const ROLES=['DIAGNOSTICS','DÉCHIFFREMENT','SÉQUENCES','VALIDATION'];
-let myRole='';
-const assignRoles=(sorted)=>{MIDX=sorted.findIndex(a=>a.id===MID);myRole=ROLES[MIDX%ROLES.length];};
-
-let STEPS=[];
-const buildSteps=(sorted)=>{
-  const n=sorted.length;
-  const ag=(role)=>sorted.find((_,i)=>ROLES[i%ROLES.length]===role)?.name||role;
-  const r1=ag('DIAGNOSTICS'),r2=ag('DÉCHIFFREMENT'),
-        r3=n>=3?ag('SÉQUENCES'):ag('DIAGNOSTICS'),
-        r4=n>=4?ag('VALIDATION'):ag('DÉCHIFFREMENT');
-  STEPS=[
-    {title:'Identification du relais',
-     desc:`<span class="role-tag">DIAGNOSTICS</span> — lisez à voix haute votre code d'erreur.<br>
-           <span class="role-tag">DÉCHIFFREMENT</span> — cherchez dans votre table quel relais correspond. Dites-le.`,
-     responder:r2,responderRole:'DÉCHIFFREMENT',
-     placeholder:'Nom du relais (ex: R-ALPHA)',answer:()=>M.relayName},
-    {title:'Calibration fréquence',
-     desc:`<span class="role-tag">${r2}</span> — confirmez le relais identifié à voix haute.<br>
-           <span class="role-tag">${r3}</span> — additionnez vos deux fréquences et entrez le résultat.`,
-     responder:r3,responderRole:n>=3?'SÉQUENCES':'DIAGNOSTICS',
-     placeholder:'Canal A + Canal B = ? (nombre)',answer:()=>String(M.freqA+M.freqB)},
-    {title:'Localisation du secteur',
-     desc:`<span class="role-tag">${r3}</span> — annoncez la somme calculée.<br>
-           <span class="role-tag">${r4}</span> — cherchez dans votre table quel secteur est actif. Donnez son ID.`,
-     responder:r4,responderRole:n>=4?'VALIDATION':'DÉCHIFFREMENT',
-     placeholder:'ID du secteur (ex: S3)',answer:()=>M.sectorId},
-    {title:'Code d\'autorisation finale',
-     desc:`<span class="role-tag">${r4}</span> — lisez le code d'autorisation du secteur <b>${M.sectorId}</b>.<br>
-           <span class="role-tag">DIAGNOSTICS</span> — entrez ce code pour finaliser le réamorçage.`,
-     responder:r1,responderRole:'DIAGNOSTICS',
-     placeholder:'Code autorisation (4 chiffres)',answer:()=>M.authCode},
-  ];
-};
-
-// ── PANNEAU ──
-const buildMyPanel=()=>{
-  const c=document.getElementById('panel-data');c.innerHTML='';
-  document.getElementById('my-role').textContent=myRole;
-  document.getElementById('my-role-badge').textContent=myRole;
-  if(myRole==='DIAGNOSTICS'){
-    c.innerHTML=`
-      <div class="err-blk">
-        <div class="eb-pre">CODE ERREUR PRIMAIRE — LISEZ-LE AUX AUTRES AGENTS</div>
-        <div class="eb-val">${M.errorCode}</div>
-        <div class="eb-post">⚠ Composant : RELAIS DE DÉMARRAGE</div>
-      </div>
-      <div class="dblk">
-        <div class="db-t">JOURNAL D'ERREURS</div>
-        <div class="db-row"><span class="db-k">CRITIQUE</span><span class="db-v r">${M.errorCode}</span></div>
-        <div class="db-row"><span class="db-k">SECONDAIRE</span><span class="db-v d">${M.fakeErr}</span></div>
-        <div class="db-row"><span class="db-k">ARCHIVÉ</span><span class="db-v d">${ERR_CODES[(ERR_CODES.indexOf(M.errorCode)+5)%ERR_CODES.length]}</span></div>
-      </div>`;
-  } else if(myRole==='DÉCHIFFREMENT'){
-    const ei=ERR_CODES.indexOf(M.errorCode),ri=RELAY.indexOf(M.relayName);
-    const order=Array.from({length:8},(_,i)=>i).sort((a,b)=>si(SES,'tord'+a,99)-si(SES,'tord'+b,99));
-    const rows=order.map(i=>({err:ERR_CODES[(ei+i)%ERR_CODES.length],relay:RELAY[(ri+i)%RELAY.length],real:i===0}));
-    c.innerHTML=`<div class="tblk" style="min-width:260px">
-      <div class="tbl-t">TABLE CODE ERREUR → RELAIS</div>
-      <div class="tbl-grid">${rows.map(r=>`
-        <div class="tbl-row${r.real?' hl':''}">
-          <div class="tbl-cell"><div class="k">ERREUR</div><div class="v">${r.err}</div></div>
-          <div class="tbl-cell"><div class="k">RELAIS</div><div class="v">${r.relay}</div></div>
-        </div>`).join('')}</div></div>`;
-  } else if(myRole==='SÉQUENCES'){
-    c.innerHTML=`<div class="sig-blk">
-      <div class="db-t">FRÉQUENCES DE RÉAMORÇAGE</div>
-      <div class="sig-row">
-        <div class="sig-lbl"><span>CANAL A</span><b>${M.freqA} MHz</b></div>
-        <div class="sig-bar"><div class="sig-fill" style="width:${M.freqA}%"></div></div>
-      </div>
-      <div class="sig-row">
-        <div class="sig-lbl"><span>CANAL B</span><b>${M.freqB} MHz</b></div>
-        <div class="sig-bar"><div class="sig-fill w" style="width:${M.freqB}%"></div></div>
-      </div>
-      <div class="sig-row">
-        <div class="sig-lbl" style="opacity:.35"><span>CANAL C (ignoré)</span><b style="color:#2a6a2a">${M.fakeFreqA} MHz</b></div>
-        <div class="sig-bar"><div class="sig-fill r" style="width:${M.fakeFreqA}%;opacity:.3"></div></div>
-      </div>
-      <div style="margin-top:8px;font-size:8px;color:#1a5a1a">→ A + B = <span style="color:#33ff33;font-family:VT323,monospace;font-size:16px">???</span></div>
-    </div>`;
-  } else if(myRole==='VALIDATION'){
-    const ai=AUTH_CODES.indexOf(M.authCode);
-    const rows=SECTOR_IDS.map((s,i)=>({sec:s,auth:s===M.sectorId?M.authCode:AUTH_CODES[(ai+i+1)%AUTH_CODES.length],real:s===M.sectorId}));
-    c.innerHTML=`<div class="sec-blk">
-      <div class="db-t">CODES D'AUTORISATION SECTEUR</div>
-      ${rows.map(r=>`<div class="sec-row${r.real?' hl':''}">
-        <span class="sec-id">${r.sec}</span><span class="sec-code">${r.auth}</span>
-        ${r.real?'<span style="font-size:7px;color:#1a6a1a;margin-left:auto">◀ ACTIF</span>':''}
-      </div>`).join('')}</div>`;
-  }
-};
-
-// ── UPDATE TEMPS RÉEL ──
-const onUpdate=(s)=>{
-  if(!s)return;
-  const ag=live(s);
-  if(!misOn){
-    updateWait(ag);
-    if(ag.length>=REQ&&!misOn)startMission(s);
-    return;
-  }
-  updateAgentUI(ag);
-  const step=s.step||0;
-  updateProg(step);
-  updateErrs(s.errors||0);
-  if(s.done&&!genDone){genDone=true;showSuccess();}
-  if(!genDone&&step<STEPS.length)renderStep(step,ag,s);
-};
-const updateWait=(ag)=>{
-  document.getElementById('wcnt').textContent=`${ag.length}/${REQ}`;
-  const rows=document.getElementById('alist');
+function buildSlots(){
+  const c=document.getElementById('aslots');c.innerHTML='';
   for(let i=0;i<REQ;i++){
-    let el=document.getElementById('alr'+i);
-    if(!el){el=document.createElement('div');el.className='alr';el.id='alr'+i;
-      el.innerHTML=`<div class="alr-n">${String(i+1).padStart(2,'0')}</div>
-        <div class="alr-nm" id="alnm${i}">en attente...</div><div class="alr-d" id="alrd${i}"></div>`;
-      rows.appendChild(el);}
-    if(i<ag.length){el.classList.add('on');document.getElementById('alnm'+i).textContent=ag[i].name+(ag[i].id===MID?' [VOUS]':'');}
-    else el.classList.remove('on');
+    const d=document.createElement('div');d.className='asl';d.id='asl'+i;
+    d.innerHTML=`<div class="asl-n">${String(i+1).padStart(2,'0')}</div>
+      <div class="asl-bar"><div class="asl-fill" id="af${i}"></div></div>
+      <div class="asl-nm" id="an${i}">EN ATTENTE...</div>
+      <div class="asl-dot" id="ad${i}"></div>`;
+    c.appendChild(d);
   }
-};
+}
 
-// ── DÉMARRAGE ──
-const startMission=(s)=>{
+window.doAbort=async function(){
+  if(MID)await upd('agents/'+MID,null);
+  location.reload();
+}
+
+// ══════ MISSION ══════
+function startMission(s){
   if(misOn)return;misOn=true;
   if(!s.startTime)upd('startTime',Date.now());
-  show('sm');document.getElementById('mhc').textContent=SES;
-  const sorted=Object.values(s.agents||{}).sort((a,b)=>a.id.localeCompare(b.id));
-  buildMission();assignRoles(sorted);buildSteps(sorted);
-  buildMyPanel();buildAgentUI(live(s));buildProg();buildErrs();startTimer(s);
-  renderStep(0,live(s),s);
+  const ag=live(s);
+  MIDX=ag.findIndex(a=>a.id===MID);
+  show('sm');
+  document.getElementById('mhc').textContent=SES;
+  buildCards(s);startGT(s);startG1(s);
   log('s','protocole bastion · démarré');
-  log('e','GÉNÉRATEUR 01 · HORS LIGNE');
-  log('w','réamorçage requis · 4 étapes · communication nécessaire');
-  log('in',`votre rôle : ${myRole}`);
-  if(myRole==='DIAGNOSTICS')log('sig','→ VOUS : lisez votre code d\'erreur aux autres agents');
-};
-
-// ── RENDU ÉTAPE ──
-const renderStep=(stepIdx,ag,s)=>{
-  if(stepIdx>=STEPS.length)return;
-  const st=STEPS[stepIdx];
-  document.getElementById('sc-n').textContent=stepIdx+1;
-  document.getElementById('sc-tot').textContent=STEPS.length;
-  document.getElementById('sc-desc').innerHTML=st.desc;
-  document.getElementById('sc-who').innerHTML=`Réponse attendue de : <b>${st.responder}</b> · rôle : ${st.responderRole}`;
-  document.getElementById('sfb').textContent='';
-  document.getElementById('sfb').className='step-fb';
-  const isMyTurn=myRole===st.responderRole;
-  const inp=document.getElementById('cmd');const btn=document.getElementById('rbtn');
-  inp.disabled=!isMyTurn;btn.disabled=!isMyTurn;
-  inp.placeholder=isMyTurn?st.placeholder:`En attente de ${st.responder}...`;
-  document.getElementById('tline').style.opacity=isMyTurn?'1':'0.3';
-  if(isMyTurn){inp.value='';inp.focus();}
-};
-
-// ── SOUMISSION ──
-window.submit=async()=>{
-  const s=await gst();const step=s?.step||0;
-  if(step>=STEPS.length||genDone)return;
-  const st=STEPS[step];
-  if(myRole!==st.responderRole)return;
-  const val=document.getElementById('cmd').value.trim().toUpperCase().replace(/\s+/g,'-');
-  if(!val)return;
-  const correct=val===st.answer().toUpperCase();
-  if(correct){
-    log('ok',`étape ${step+1} · "${val}" · VALIDÉ`);
-    document.getElementById('cmd').value='';
-    document.getElementById('sfb').textContent='✓ VALIDÉ';
-    document.getElementById('sfb').className='step-fb ok';
-    flashOk();
-    const next=step+1;
-    if(next>=STEPS.length){await upd('step',next);await upd('done',true);}
-    else await upd('step',next);
-  } else {
-    const errs=(s?.errors||0)+1;
-    await upd('errors',errs);
-    log('e',`étape ${step+1} · "${val}" · ERREUR`);
-    document.getElementById('cmd').value='';
-    document.getElementById('sfb').textContent=`✗ ERREUR · ${MAX_ERR-errs} tentatives restantes`;
-    document.getElementById('sfb').className='step-fb err';
-    flashErr();
-    if(errs>=MAX_ERR){log('e','TROP D\'ERREURS · RÉINITIALISATION');await upd('step',0);await upd('errors',0);}
-  }
-};
-
-// ── UI HELPERS ──
-const buildAgentUI=(ag)=>{
-  const sorted=_st?Object.values(_st.agents||{}).sort((a,b)=>a.id.localeCompare(b.id)):ag;
-  const c=document.getElementById('agrows');c.innerHTML='';
+  log('w','3 générateurs à activer · paleto forest');
+}
+function buildCards(s){
+  const ag=live(s),c=document.getElementById('agcards');c.innerHTML='';
   ag.forEach(a=>{
-    const idx=sorted.findIndex(x=>x.id===a.id);
-    const role=ROLES[idx%ROLES.length];
-    const d=document.createElement('div');d.className='agr';d.id='agr_'+a.id;
-    d.innerHTML=`<div class="agr-d on"></div>
-      <div class="agr-nm${a.id===MID?' me':''}">${a.name}${a.id===MID?' ·V':''}</div>
-      <div class="agr-role">${role}</div>`;
+    const d=document.createElement('div');d.className='agc'+(a.id===MID?' me':'');
+    d.id='ac_'+a.id;
+    d.innerHTML=`<div class="agn">${a.name}<span class="agu">${a.id===MID?'VOUS':''}</span></div>
+      <div class="ags">AGENT MOSSEBA · EN LIGNE</div>`;
     c.appendChild(d);
   });
-};
-const updateAgentUI=(ag)=>{if(ag[0]&&!document.getElementById('agr_'+ag[0].id))buildAgentUI(ag);};
-const buildProg=()=>{
-  const c=document.getElementById('prog');c.innerHTML='';
-  STEPS.forEach((st,i)=>{
-    const d=document.createElement('div');d.className='pr-row';d.id='pr'+i;
-    d.innerHTML=`<div class="pr-n">${i+1}</div><div class="pr-txt">${st.title}</div><div class="pr-ic" id="pric${i}">·</div>`;
-    c.appendChild(d);
-  });
-};
-const updateProg=(cur)=>{
-  STEPS.forEach((_,i)=>{
-    const el=document.getElementById('pr'+i);const ic=document.getElementById('pric'+i);if(!el)return;
-    if(i<cur){el.className='pr-row done';if(ic)ic.textContent='✓';}
-    else if(i===cur){el.className='pr-row active';if(ic)ic.textContent='▶';}
-    else{el.className='pr-row';if(ic)ic.textContent='·';}
-  });
-};
-const buildErrs=()=>{
-  const c=document.getElementById('edots');c.innerHTML='';
-  for(let i=0;i<MAX_ERR;i++){const d=document.createElement('div');d.className='ed';d.id='ed'+i;c.appendChild(d);}
-};
-const updateErrs=(n)=>{for(let i=0;i<MAX_ERR;i++){document.getElementById('ed'+i)?.classList.toggle('f',i<n);}};
-const startTimer=(s)=>{
-  const el=document.getElementById('mtimer');const base=s?.startTime||Date.now();const max=20*60;
-  setInterval(()=>{
-    const rem=Math.max(0,max-Math.floor((Date.now()-base)/1000));
-    const m=Math.floor(rem/60),sc=rem%60;
-    el.textContent=`${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
-    el.className=rem<60?'d':rem<180?'w':'';
+}
+function log(type,m){
+  const l=document.getElementById('mlog');
+  const d=document.createElement('div');d.className='lge '+type;
+  const n=new Date();const ts=`${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}:${n.getSeconds().toString().padStart(2,'0')}`;
+  d.textContent=`[${ts}] ${m}`;l.appendChild(d);l.scrollTop=l.scrollHeight;
+}
+function show(id){['sc','sw','sm','ssuc'].forEach(s=>document.getElementById(s).classList.toggle('off',s!==id));}
+function setGen(n,st){
+  const h=document.getElementById('gh'+n),t=document.getElementById('gt'+n);
+  if(h)h.className='geh'+(st==='act'?' act':st==='dn'?' dn':'');
+  if(t){t.className='gent'+(st==='act'?' act':st==='dn'?' dn':'');
+    t.textContent=`GÉN-0${n} · ${st==='act'?'ACTIF':st==='dn'?'EN LIGNE':'VERROUILLÉ'}`;}
+}
+
+// ══════ TIMER ══════
+function startGT(s){
+  const el=document.getElementById('mtimer');
+  const base=s?.startTime||Date.now();
+  gIv=setInterval(()=>{
+    const rem=Math.max(0,gSec-Math.floor((Date.now()-base)/1000));
+    const m=Math.floor(rem/60),sec=rem%60;
+    el.textContent=`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    el.className='ot'+(rem<120?' d':rem<300?' w':'');
+    if(rem<=0){clearInterval(gIv);log('e','TEMPS ÉCOULÉ · MISSION ÉCHOUÉE');}
   },500);
-};
-const log=(t,m)=>{
-  const lb=document.getElementById('mlogb');if(!lb)return;
-  const d=document.createElement('div');d.className='le '+t;
-  const n=new Date();const ts=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
-  d.textContent=`[${ts}] ${m}`;lb.appendChild(d);lb.scrollTop=lb.scrollHeight;
-};
-const show=(id)=>['sc','sw','sm','ssuc'].forEach(s=>document.getElementById(s).classList.toggle('off',s!==id));
-const flashErr=()=>{const e=document.getElementById('eov');e.style.display='block';setTimeout(()=>e.style.display='none',600);};
-const flashOk=()=>{const e=document.getElementById('gov');e.style.display='block';setTimeout(()=>e.style.display='none',800);};
-const showSuccess=()=>{log('sig','GÉNÉRATEUR 01 · NŒUD ACTIF');flashOk();setTimeout(()=>show('ssuc'),1800);};
+}
+
+// cpGen : transition entre générateurs (déclenché par watchState)
+function cpGen(n,s){
+  if(cgen!==n)return;
+  setGen(n,'dn');
+  log('sig',`nœud 0${n} actif · signal montant`);
+  if(n===1){clearInterval(nIv);document.getElementById('g1').classList.remove('on');g1done=true;}
+  if(n===2){clearInterval(g2Iv);document.getElementById('g2').classList.remove('on');g2done=true;}
+  if(n===3){document.getElementById('g3').classList.remove('on');g3done=true;
+    setTimeout(()=>show('ssuc'),2000);}
+  cgen=n+1;
+  if(n<3)setTimeout(()=>{if(n===1)startG2(s);if(n===2)startG3(s);},1200);
+}
+
+// ══════ GEN 1 ══════
+let ndPct=0,ndDir=1,ndSpd=0.85,nIv=null,g1hold=false,g1hs=0,g1au=0,g1am=6;
+function startG1(s){
+  cgen=1;setGen(1,'act');document.getElementById('g1').classList.add('on');
+  log('w','générateur 01 · en attente de synchronisation');
+  const bar=document.getElementById('atts');
+  for(let i=0;i<g1am;i++){const d=document.createElement('div');d.className='at';d.id='at'+i;bar.appendChild(d);}
+  const ag=live(s||{agents:{}});
+  const c=document.getElementById('sags');c.innerHTML='';
+  ag.forEach(a=>{
+    const d=document.createElement('div');d.className='sag'+(a.id===MID?' ma':'');
+    d.id='sa_'+a.id;d.textContent=a.name;c.appendChild(d);
+  });
+  const nz=document.getElementById('nzone');nz.style.left='calc(38% + 20px)';nz.style.width='calc(24%)';
+  nIv=setInterval(animN,40);
+}
+function animN(){
+  ndPct+=ndDir*ndSpd;
+  if(ndPct>=100){ndPct=100;ndDir=-1;}if(ndPct<=0){ndPct=0;ndDir=1;}
+  const nd=document.getElementById('ndl');const tr=document.querySelector('.ntrack');
+  if(!tr||!nd)return;
+  const w=tr.offsetWidth;
+  nd.style.left=(20+ndPct/100*w)+'px';
+  const inZ=ndPct>=38&&ndPct<=62;
+  nd.style.background=inZ?'var(--ok)':'var(--c)';
+  nd.style.boxShadow=inZ?'0 0 12px rgba(57,255,143,0.9)':'0 0 10px rgba(0,229,255,0.9)';
+  // Upload mon état hold
+  upd('g1h/'+MID,{h:g1hold,p:ndPct,t:Date.now()});
+}
+function checkG1sync(s,ag){
+  if(g1done||cgen!==1)return;
+  const inZ=ndPct>=38&&ndPct<=62;if(!inZ){g1hs=0;return;}
+  const allH=ag.every(a=>a.id===MID?g1hold:(s.g1h&&s.g1h[a.id]&&s.g1h[a.id].h&&Date.now()-s.g1h[a.id].t<1500));
+  if(allH){
+    if(!g1hs)g1hs=Date.now();
+    if(Date.now()-g1hs>700){
+      g1done=true;clearInterval(nIv);
+      document.getElementById('g1r').textContent='SYNCHRONISATION RÉUSSIE';
+      document.getElementById('g1r').classList.add('ok');
+      log('ok','générateur 01 · synchronisé');
+      upd('gen1',true);
+    }
+  }else{
+    if(g1hs&&Date.now()-g1hs>200){
+      g1hs=0;g1au++;
+      const at=document.getElementById('at'+(g1au-1));if(at)at.classList.add('f');
+      if(g1au>=g1am){log('e','générateur 01 · réinitialisation');flashE();g1au=0;document.querySelectorAll('.at').forEach(a=>a.className='at');}
+    }
+  }
+}
+window.g1H=function(on){if(g1done)return;g1hold=on;if(!on)g1hs=0;document.getElementById('g1btn').classList.toggle('on',on);}
+
+// ══════ GEN 2 ══════
+let g2Iv=null,g2hold=false,myJ=100,myRms=1000,lHold=Date.now();
+function startG2(s){
+  cgen=2;setGen(2,'act');document.getElementById('g2').classList.add('on');
+  log('w','générateur 02 · maintien requis');
+  const ag=live(s||{agents:{}});
+  const idx=ag.findIndex(a=>a.id===MID);
+  const rh=[1600,1100,800,600,1900,1300];
+  myRms=rh[idx%rh.length];myJ=100;
+  document.getElementById('rtm').textContent=(myRms/1000).toFixed(1)+'s';
+  const jc=document.getElementById('jauges');jc.innerHTML='';
+  ag.forEach(a=>{
+    const d=document.createElement('div');d.className='jcol';
+    d.innerHTML=`<div class="jnm">${a.name}</div>
+      <div class="jtr"><div class="jfill" id="jf_${a.id}" style="height:100%"></div></div>
+      <div class="jpct" id="jp_${a.id}">100%</div>`;
+    jc.appendChild(d);
+  });
+  let lt=Date.now();
+  g2Iv=setInterval(()=>{
+    const dt=Date.now()-lt;lt=Date.now();
+    if(g2hold){lHold=Date.now();myJ=Math.min(100,myJ+dt*0.18);}
+    else{myJ=Math.max(0,myJ-dt*(myRms/1000)*0.035);}
+    // Ma propre jauge affichée
+    const jf=document.getElementById('jf_'+MID);const jp=document.getElementById('jp_'+MID);
+    if(jf){jf.style.height=myJ+'%';jf.className='jfill'+(myJ<30?' d':myJ<60?' w':'');}
+    if(jp)jp.textContent=Math.round(myJ)+'%';
+    // Upload mon état
+    upd('g2j/'+MID,{v:myJ,t:Date.now()});
+    document.getElementById('rtm').classList.toggle('p',g2hold);
+  },150);
+}
+function checkG2win(s,ag){
+  if(g2done||cgen!==2||!s.g2j)return;
+  const allH=ag.every(a=>{
+    if(a.id===MID)return myJ>65;
+    const jd=s.g2j[a.id];return jd&&Date.now()-jd.t<3000&&jd.v>65;
+  });
+  if(allH){
+    if(!s.g2ws){upd('g2ws',Date.now());}
+    else if(Date.now()-s.g2ws>4000&&!s.gen2){
+      g2done=true;log('ok','générateur 02 · pression stabilisée');
+      document.getElementById('g2r').textContent='PRESSION STABILISÉE';
+      document.getElementById('g2r').classList.add('ok');
+      upd('gen2',true);
+    }
+  }else if(s.g2ws){upd('g2ws',null);}
+}
+window.g2H=function(on){g2hold=on;if(on)lHold=Date.now();document.getElementById('g2btn').classList.toggle('on',on);}
+
+// ══════ GEN 3 ══════
+let g3sec=45,g3civ=null;
+const SYMS=['▲','◆','●','■','▼','◀','▶','✦','⬟','⬡','△','□','○','◇','★'];
+function shuf(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+// Seed reproductible basé sur le code session pour que tous voient les mêmes symboles
+function seededShuf(arr,seed){
+  let s=0;for(let i=0;i<seed.length;i++)s=(s*31+seed.charCodeAt(i))&0xffffffff;
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){s=(s*1664525+1013904223)&0xffffffff;const j=Math.abs(s)%(i+1);[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function startG3(s){
+  cgen=3;setGen(3,'act');document.getElementById('g3').classList.add('on');
+  log('w','générateur 03 · circuit fragmenté · coopération requise');
+  const ag=live(s||{agents:{}});
+  // Index trié par ordre d'inscription (stable)
+  const sorted=Object.values(s.agents||{}).sort((a,b)=>a.id.localeCompare(b.id));
+  const idx=sorted.findIndex(a=>a.id===MID);
+  document.getElementById('g3s').textContent=String(idx+1).padStart(2,'0');
+  document.getElementById('g3a').textContent=ME;
+  // Symboles déterministes (seed = code session)
+  const sym=seededShuf([...SYMS],SES).slice(0,sorted.length*3);
+  const mine=sym.slice(idx*3,(idx+1)*3);
+  const swc=document.getElementById('swl');swc.innerHTML='';
+  ['A','B','C'].forEach((id,i)=>{
+    const d=document.createElement('div');d.className='sw';d.id='sw_'+id;
+    d.onclick=()=>actSw(id,i,mine[i]);
+    d.innerHTML=`<div class="swid">${id}</div><div class="swline" id="sl_${id}"></div><div class="swsym">${mine[i]||'?'}</div>`;
+    swc.appendChild(d);
+  });
+  const frags=[
+    `Mon <span>SWITCH-A</span> est le premier de la séquence globale.`,
+    `Mon <span>SWITCH-B</span> précède le symbole de l'agent suivant.`,
+    `Mon <span>SWITCH-C</span> clôt la séquence globale.`,
+    `Mon <span>SWITCH-A</span> suit le dernier switch de l'agent précédent.`,
+    `Mon <span>SWITCH-B</span> est en position médiane de la séquence.`,
+    `Tous mes switches s'activent simultanément.`,
+  ];
+  document.getElementById('fbtx').innerHTML=frags[idx%frags.length];
+  g3sec=45;
+  g3civ=setInterval(()=>{
+    g3sec--;const el=document.getElementById('g3t');
+    el.textContent=g3sec;el.className='g3t'+(g3sec<10?' d':g3sec<20?' w':'');
+    if(g3sec<=0){clearInterval(g3civ);g3Fail(s);}
+  },1000);
+}
+async function actSw(id,idx,sym){
+  if(g3done)return;
+  const sw=document.getElementById('sw_'+id);if(!sw||sw.classList.contains('on'))return;
+  sw.classList.add('on');document.getElementById('sl_'+id)?.classList.add('on');
+  log('ok',`switch ${id} · activé · ${sym}`);
+  const snap=await gst();const s=snap||{};
+  const acts=(s.g3acts||[]);
+  acts.push({ag:MID,nm:ME,sw:id,sym,t:Date.now()});
+  await upd('g3acts',acts);
+  const ag=live(s);
+  if(acts.length>=ag.length*3){
+    log('ok','circuit complet · générateur 03 · en ligne');
+    await upd('gen3',true);
+  }
+}
+async function g3Fail(s){
+  if(g3done)return;
+  log('e','temps écoulé · réinitialisation');flashE();
+  document.getElementById('g3r').textContent='ÉCHEC · RÉINITIALISATION';
+  document.getElementById('g3r').classList.add('fail');
+  await upd('g3acts',[]);
+  setTimeout(()=>{
+    document.getElementById('g3r').textContent='';document.getElementById('g3r').classList.remove('fail');
+    ['A','B','C'].forEach(id=>{document.getElementById('sw_'+id)?.classList.remove('on');document.getElementById('sl_'+id)?.classList.remove('on');});
+    g3sec=45;
+    g3civ=setInterval(()=>{g3sec--;const el=document.getElementById('g3t');el.textContent=g3sec;
+      el.className='g3t'+(g3sec<10?' d':g3sec<20?' w':'');if(g3sec<=0){clearInterval(g3civ);g3Fail(s);}},1000);
+  },2200);
+}
+function g3Win(){document.getElementById('g3r').textContent='CIRCUIT COMPLET · NŒUD ACTIF';document.getElementById('g3r').classList.add('ok');}
+
+// ══════ UTILITAIRES ══════
+function flashE(){const e=document.getElementById('eov');e.style.display='block';setTimeout(()=>e.style.display='none',700);}
+
+['nc','nj','sj'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9_\-]/g,'');});
+});
 </script>
 </body>
 </html>
